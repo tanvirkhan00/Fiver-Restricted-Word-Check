@@ -1,32 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Fiverr Safety Checker</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiverr Safety Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="app">
+<div class="container">
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🛡</div>
+      <div class="brand-text">
+        <h1>Fiverr Safety Checker</h1>
+        <p>// message risk analyzer</p>
+      </div>
+    </div>
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>Live Scanning</span>
+    </div>
+  </header>
 
-    <header>
-      <h1>Fiverr Safety Checker</h1>
-      <p>Detect risky words in your message</p>
-    </header>
+  <div class="layout">
+    <!-- Editor Column -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Message Input</span>
+          <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
+        </div>
+        <div class="input-area">
+          <textarea id="inputText" oninput="checkText()" placeholder="Type or paste your Fiverr message here to scan for risky content..."></textarea>
+          <span class="char-count" id="charCount">0 chars</span>
+        </div>
+      </div>
 
-    <div class="editor">
-      <textarea id="inputText" oninput="checkText()" placeholder="Type or paste your message here..."></textarea>
-
-      <div id="outputText" class="output"></div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Highlighted Preview</span>
+        </div>
+        <div class="output-wrapper">
+          <div class="output-label">Flagged terms highlighted below</div>
+          <div id="outputText"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="sidebar">
-      <h3>Detected Issues</h3>
-      <ul id="detectedList"></ul>
-    </div>
+    <!-- Sidebar Column -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Risk Overview</span>
+        </div>
+        <div class="risk-summary">
+          <div class="risk-pill high">
+            <div class="count" id="highCount">0</div>
+            <div class="label">High</div>
+          </div>
+          <div class="risk-pill medium">
+            <div class="count" id="mediumCount">0</div>
+            <div class="label">Med</div>
+          </div>
+          <div class="risk-pill low">
+            <div class="count" id="lowCount">0</div>
+            <div class="label">Low</div>
+          </div>
+        </div>
+        <div class="risk-meter">
+          <div class="risk-label-row">
+            <span>Risk Level</span>
+            <span id="riskScore">—</span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill" id="meterFill"></div>
+          </div>
+        </div>
+      </div>
 
+      <div class="card" style="flex:1;">
+        <div class="card-header">
+          <span class="card-title">Detected Issues</span>
+          <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);" id="totalCount">0 found</span>
+        </div>
+        <div class="issues-body" id="issuesList">
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <p>No issues detected yet.<br>Start typing to scan.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
 
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
