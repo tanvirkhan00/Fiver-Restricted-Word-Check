@@ -1,42 +1,77 @@
 body {
-  font-family: Arial;
-  background: #f5f7fb;
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f4f6fb;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
   padding: 20px;
 }
 
-.container {
-  max-width: 700px;
-  margin: auto;
+header {
+  grid-column: 1 / -1;
+}
+
+h1 {
+  margin: 0;
+}
+
+.editor {
   background: #fff;
-  padding: 20px;
+  padding: 15px;
   border-radius: 10px;
 }
 
 textarea {
   width: 100%;
   height: 150px;
-  padding: 10px;
-}
-
-button {
-  margin-top: 10px;
-  padding: 10px 15px;
-  background: #007bff;
-  color: #fff;
   border: none;
-  cursor: pointer;
+  outline: none;
+  resize: none;
+  font-size: 14px;
 }
 
-#outputText {
+.output {
   margin-top: 15px;
   padding: 10px;
-  background: #f1f1f1;
-  white-space: pre-wrap;
+  background: #f9fafc;
+  border-radius: 8px;
+  min-height: 100px;
 }
 
-.highlight {
-  background: red;
-  color: white;
-  padding: 2px 4px;
-  border-radius: 3px;
+.sidebar {
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* Highlight styles */
+.high {
+  background: #ff4d4d;
+  color: #fff;
+}
+
+.medium {
+  background: #ffa500;
+  color: #fff;
+}
+
+.low {
+  background: #4caf50;
+  color: #fff;
 }

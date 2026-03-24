@@ -2,23 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Fiverr Violation Checker</title>
+  <title>Fiverr Safety Checker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="container">
-    <h2>Fiverr Violation Checker 🔍</h2>
+  <div class="app">
 
-    <textarea id="inputText" placeholder="Paste your text here..."></textarea>
+    <header>
+      <h1>Fiverr Safety Checker</h1>
+      <p>Detect risky words in your message</p>
+    </header>
 
-    <button onclick="checkText()">Check</button>
+    <div class="editor">
+      <textarea id="inputText" oninput="checkText()" placeholder="Type or paste your message here..."></textarea>
 
-    <h3>Detected Words:</h3>
-    <ul id="detectedList"></ul>
+      <div id="outputText" class="output"></div>
+    </div>
 
-    <h3>Highlighted Text:</h3>
-    <div id="outputText"></div>
+    <div class="sidebar">
+      <h3>Detected Issues</h3>
+      <ul id="detectedList"></ul>
+    </div>
+
   </div>
 
   <script src="script.js"></script>
