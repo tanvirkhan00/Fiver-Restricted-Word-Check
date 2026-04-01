@@ -9,99 +9,108 @@
 </head>
 <body>
 
-<!-- Neon mid orb for extra atmosphere -->
-<div class="neon-mid-orb"></div>
-
 <div class="container">
+ 
   <header>
     <div class="brand">
-      <div class="brand-icon">🛡</div>
+      <div class="brand-shield">🛡</div>
       <div class="brand-text">
         <h1>Fiverr Safety Checker</h1>
-        <p>// message risk analyzer</p>
+        <p>// message risk analyzer v2.0</p>
       </div>
     </div>
-    <div class="status-badge">
-      <span class="status-dot"></span>
-      <span>Live Scanning</span>
+    <div class="header-right">
+      <div class="badge">
+        <span class="live-dot"></span>
+        <span>Live Scanning</span>
+      </div>
+      <button class="btn-clear btn-copy" id="copyBtn" onclick="copyMessage()">⎘ Copy</button>
+      <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
     </div>
   </header>
-
+ 
   <div class="layout">
-    <!-- Editor Column -->
-    <div style="display:flex; flex-direction:column; gap:20px;">
+ 
+    <!-- LEFT COLUMN -->
+    <div class="col-left">
+ 
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">Message Input</span>
-          <button class="btn-clear" onclick="clearAll()">✕ Clear</button>
+        <div class="card-head">
+          <span class="card-label">Message Input</span>
+          <span class="char-meta" id="charCount">0 chars</span>
         </div>
-        <div class="input-area">
-          <textarea id="inputText" oninput="checkText()" placeholder="Type or paste your Fiverr message here to scan for risky content..."></textarea>
-          <span class="char-count" id="charCount">0 chars</span>
+        <div class="input-wrap">
+          <textarea id="inputText" oninput="checkText()" placeholder="Paste or type your Fiverr message here to scan for policy violations and risky content..."></textarea>
+        </div>
+        <div class="input-footer">
+          <span class="char-meta">Real-time scanning active</span>
+          <span class="char-meta" id="wordCount">0 words</span>
         </div>
       </div>
-
+ 
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">Highlighted Preview</span>
+        <div class="card-head">
+          <span class="card-label">Highlighted Preview</span>
         </div>
-        <div class="output-wrapper">
-          <div class="output-label">Flagged terms highlighted below</div>
-          <div id="outputText"></div>
-        </div>
+        <div class="preview-body" id="outputText"></div>
       </div>
+ 
     </div>
-
-    <!-- Sidebar Column -->
-    <div style="display:flex; flex-direction:column; gap:20px;">
+ 
+    <!-- RIGHT COLUMN -->
+    <div class="col-right">
+ 
       <div class="card">
-        <div class="card-header">
-          <span class="card-title">Risk Overview</span>
+        <div class="card-head">
+          <span class="card-label">Risk Overview</span>
         </div>
-        <div class="risk-summary">
-          <div class="risk-pill high">
-            <div class="count" id="highCount">0</div>
-            <div class="label">High</div>
+        <div class="risk-pills">
+          <div class="risk-pill high" id="pillHigh">
+            <div class="pill-count" id="highCount">0</div>
+            <div class="pill-label">High Risk</div>
           </div>
-          <div class="risk-pill medium">
-            <div class="count" id="mediumCount">0</div>
-            <div class="label">Med</div>
+          <div class="risk-pill med" id="pillMed">
+            <div class="pill-count" id="mediumCount">0</div>
+            <div class="pill-label">Medium</div>
           </div>
-          <div class="risk-pill low">
-            <div class="count" id="lowCount">0</div>
-            <div class="label">Low</div>
+          <div class="risk-pill low" id="pillLow">
+            <div class="pill-count" id="lowCount">0</div>
+            <div class="pill-label">Low</div>
           </div>
         </div>
-        <div class="risk-meter">
-          <div class="risk-label-row">
-            <span>Risk Level</span>
-            <span id="riskScore">—</span>
+        <div class="meter-wrap">
+          <div class="meter-row">
+            <span>Risk Score</span>
+            <span id="riskLabel" style="color:var(--muted);">—</span>
           </div>
           <div class="meter-track">
             <div class="meter-fill" id="meterFill"></div>
           </div>
         </div>
       </div>
-
+ 
       <div class="card" style="flex:1;">
-        <div class="card-header">
-          <span class="card-title">Detected Issues</span>
-          <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);" id="totalCount">0 found</span>
+        <div class="card-head">
+          <span class="card-label">Detected Issues</span>
+          <span id="totalCount" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);">0 found</span>
         </div>
         <div class="issues-body" id="issuesList">
           <div class="empty-state">
             <div class="empty-icon">🔍</div>
-            <p>No issues detected yet.<br>Start typing to scan.</p>
+            <p>No issues detected.<br>Start typing to scan.</p>
           </div>
         </div>
       </div>
+ 
     </div>
   </div>
-
-  <!-- Copyright Badge -->
-  <div class="copyright-badge">
-    <span>© <span class="copy-accent">2026</span> Fiverr Safety Checker. All rights reserved. <span class="copy-accent">Tanvir Khan</span></span>
+ 
+  <div class="footer">
+    © <span class="acc">2026</span> Fiverr Safety Checker — Built by <span class="acc">Tanvir Khan</span>
   </div>
+ 
+</div>
+ 
 </div>
 
 <script src="script.js"></script>
