@@ -4,7 +4,8 @@ import {
   Settings as SettingsIcon, Search, Plus, Copy as CopyIcon, Trash2, Pencil,
   Files, X, Check, AlertTriangle, Info, ChevronDown, Menu, Sun, Moon, Clock,
   FileText, Send, ArrowRight, Filter, ShieldCheck, ShieldAlert, ShieldX,
-  ListChecks, Save, ClipboardList, ChevronRight, Star, Command, TrendingUp, Wand2
+  ListChecks, Save, ClipboardList, ChevronRight, Star, Command, TrendingUp, Wand2,
+  Download, Upload, DatabaseBackup
 } from "lucide-react";
 
 /* ======================================================================
@@ -1297,7 +1298,8 @@ function CategoriesPage({ messages, templates, setPage, setCheckerCategory }) {
 /* ======================================================================
    SETTINGS PAGE
 ====================================================================== */
-function SettingsPage({ theme, toggleTheme, settings, setSettings, onClearMessages, onClearTemplates, onClearActivity }) {
+function SettingsPage({ theme, toggleTheme, settings, setSettings, onClearMessages, onClearTemplates, onClearActivity, onExportData, onImportFile, lastBackupAt }) {
+  const fileInputRef = useRef(null);
   return (
     <div className="page-body">
       <PageHeader title="Settings" subtitle="Manage appearance, preferences, and stored data." onMenu={() => {}} />
@@ -1326,6 +1328,38 @@ function SettingsPage({ theme, toggleTheme, settings, setSettings, onClearMessag
           <select className="select" value={settings.defaultCategory} onChange={(e) => setSettings((s) => ({ ...s, defaultCategory: e.target.value }))}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3 className="settings-heading">Backup & Restore</h3>
+        <div className="settings-row">
+          <div>
+            <span className="settings-row-title">Export all data</span>
+            <p className="settings-row-sub">
+              Download your saved messages, templates, and activity as a JSON file.
+              {lastBackupAt ? ` Last exported ${timeAgo(lastBackupAt)}.` : " Do this before switching devices, browsers, or dev server ports."}
+            </p>
+          </div>
+          <Button tone="secondary" icon={Download} onClick={onExportData}>Export</Button>
+        </div>
+        <div className="settings-row">
+          <div>
+            <span className="settings-row-title">Import data</span>
+            <p className="settings-row-sub">Restore from a previously exported JSON backup. This replaces your current data.</p>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json"
+            style={{ display: "none" }}
+            onChange={(e) => { if (e.target.files?.[0]) onImportFile(e.target.files[0]); e.target.value = ""; }}
+          />
+          <Button tone="secondary" icon={Upload} onClick={() => fileInputRef.current?.click()}>Import</Button>
+        </div>
+        <div className="backup-note">
+          <DatabaseBackup size={13} />
+          <span>Saved data lives in this browser's local storage, tied to this exact address (including the port, e.g. localhost:5173). If your dev server ever starts on a different port, or you switch browsers/devices, export a backup first and import it there.</span>
         </div>
       </div>
 
@@ -1575,6 +1609,64 @@ export default function App() {
     onConfirm: () => { setActivity([]); addToast("Activity log cleared.", "danger"); },
   });
 
+  /* ---- Backup: export / import all data as a JSON file ---- */
+  const [lastBackupAt, setLastBackupAt] = useState(null);
+
+  const handleExportData = () => {
+    const payload = {
+      app: "Fiverr Safety Checker",
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      messages, templates, activity, settings, theme,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `fiverr-safety-checker-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setLastBackupAt(Date.now());
+    addActivity("Data exported to backup file");
+    addToast("Backup file downloaded.");
+  };
+
+  const handleImportFile = (file) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch {
+        addToast("That file isn't valid JSON.", "danger");
+        return;
+      }
+      if (!parsed || (!Array.isArray(parsed.messages) && !Array.isArray(parsed.templates))) {
+        addToast("That doesn't look like a Fiverr Safety Checker backup.", "danger");
+        return;
+      }
+      setConfirmDialog({
+        title: "Import backup",
+        message: `This will replace your current data with the backup${parsed.exportedAt ? ` from ${new Date(parsed.exportedAt).toLocaleString()}` : ""}. This can't be undone.`,
+        confirmLabel: "Replace with backup",
+        onConfirm: () => {
+          if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
+          if (Array.isArray(parsed.templates)) setTemplates(parsed.templates);
+          if (Array.isArray(parsed.activity)) setActivity(parsed.activity);
+          if (parsed.settings) setSettings(parsed.settings);
+          if (parsed.theme) setTheme(parsed.theme);
+          addActivity("Data restored from backup file");
+          addToast("Backup restored successfully.");
+        },
+      });
+    };
+    reader.onerror = () => addToast("Couldn't read that file.", "danger");
+    reader.readAsText(file);
+  };
+
   return (
     <div className={`app-root theme-${theme}`} data-theme={theme}>
       <style>{CSS}</style>
@@ -1631,6 +1723,7 @@ export default function App() {
           <SettingsPage
             theme={theme} toggleTheme={toggleTheme} settings={settings} setSettings={setSettings}
             onClearMessages={clearMessages} onClearTemplates={clearTemplates} onClearActivity={clearActivity}
+            onExportData={handleExportData} onImportFile={handleImportFile} lastBackupAt={lastBackupAt}
           />
         )}
       </main>
@@ -1947,6 +2040,8 @@ const CSS = `
 .settings-section .settings-heading + .settings-row { border-top: none; }
 .settings-row-title { font-size: 13px; font-weight: 600; }
 .settings-row-sub { font-size: 11.5px; color: var(--text2); margin-top: 2px; }
+.backup-note { display: flex; align-items: flex-start; gap: 8px; padding: 12px 0 16px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.backup-note svg { flex-shrink: 0; margin-top: 2px; }
 
 /* MODALS */
 .modal-overlay { position: fixed; inset: 0; background: rgba(3,5,12,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
