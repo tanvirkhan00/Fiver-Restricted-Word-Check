@@ -88,7 +88,7 @@ const RESTRICTED_WORDS = [
   { word: "reach", level: "low", category: "Communication Signal", reason: "Could indicate intent to contact outside platform — context-dependent risk." },
 ].sort((a, b) => b.word.length - a.word.length);
 
-const CATEGORIES = ["First Draft", "Meeting Approach", "Follow Up", "Delivery Message", "Revision / Adjustment", "General"];
+const CATEGORIES = ["First Draft", "Meeting Approach", "Follow Up", "Delivery Message", "Revision / Adjustment","Extend Message", "General"];
 const APP_VERSION = "2.0.0";
 
 /* Seed content so the app never opens completely empty */
@@ -98,6 +98,8 @@ const SEED_TEMPLATES = [
   { id: "t3", name: "Project Follow Up", category: "Follow Up", description: "Check in on a quiet order.", content: "Hi, just checking in — have you had a chance to look over the last delivery? Let me know if anything needs adjusting.", tags: ["check-in"], createdAt: Date.now() - 86400000 * 3, updatedAt: Date.now() - 86400000 * 3, riskStatus: "safe", riskScore: 0 },
   { id: "t4", name: "Project Delivery", category: "Delivery Message", description: "Deliver finished work with next steps.", content: "Your order is complete and delivered! Please review the files and let me know if you'd like any revisions before marking it complete.", tags: ["delivery"], createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2, riskStatus: "safe", riskScore: 0 },
   { id: "t5", name: "Revision Request", category: "Revision / Adjustment", description: "Ask the client for clarification on changes.", content: "Thanks for the notes! Could you clarify which section you'd like adjusted so I can get the revision right the first time?", tags: ["revision"], createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000, riskStatus: "safe", riskScore: 0 },
+  { id: "t6", name: "Extend Delivery Time", category: "Extend Request", description: "Ask the client for extra time before the deadline.", content: "Hi, I'm working through the details carefully and want to make sure everything is right before delivery. Would it be okay to extend the deadline by a couple of days?", tags: ["extension", "deadline"], createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000, riskStatus: "safe", riskScore: 0 },
+
 ];
 
 /* ======================================================================
@@ -1185,18 +1187,18 @@ export default function App() {
 
   /* ---- Load persisted state once ---- */
   useEffect(() => {
-  const saved = loadState();
+    const saved = loadState();
 
-  if (saved) {
-    if (saved.messages) setMessages(saved.messages);
-    if (saved.templates) setTemplates(saved.templates);
-    if (saved.activity) setActivity(saved.activity);
-    if (saved.settings) setSettings(saved.settings);
-    if (saved.theme) setTheme(saved.theme);
-  }
+    if (saved) {
+      if (saved.messages) setMessages(saved.messages);
+      if (saved.templates) setTemplates(saved.templates);
+      if (saved.activity) setActivity(saved.activity);
+      if (saved.settings) setSettings(saved.settings);
+      if (saved.theme) setTheme(saved.theme);
+    }
 
-  setLoaded(true);
-}, []);
+    setLoaded(true);
+  }, []);
 
   /* ---- Persist on change ---- */
   useEffect(() => {
