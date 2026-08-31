@@ -4,106 +4,145 @@ import {
   Settings as SettingsIcon, Search, Plus, Copy as CopyIcon, Trash2, Pencil,
   Files, X, Check, AlertTriangle, Info, ChevronDown, Menu, Sun, Moon, Clock,
   FileText, Send, ArrowRight, Filter, ShieldCheck, ShieldAlert, ShieldX,
-  ListChecks, Save, ClipboardList, ChevronRight
+  ListChecks, Save, ClipboardList, ChevronRight, Star, Command, TrendingUp, Wand2
 } from "lucide-react";
 
 /* ======================================================================
-  DATA: restricted-word ruleset (unchanged from the original scanner)
+   DATA: restricted-word ruleset (unchanged from the original scanner)
 ====================================================================== */
 const RESTRICTED_WORDS = [
-  { word: "reach me on", level: "high", category: "Off-Platform Contact", reason: "Asking to be reached on external platforms bypasses Fiverr's communication policy and puts both parties at risk of scams and loss of protection." },
-  { word: "text", level: "high", category: "Off-Platform Contact", reason: "Requesting texts outside Fiverr removes all transaction records and voids buyer/seller protections." },
-  { word: "call", level: "high", category: "Off-Platform Contact", reason: "Initiating calls outside Fiverr violates TOS and removes dispute resolution coverage." },
-  { word: "number", level: "high", category: "Off-Platform Contact", reason: "Sharing personal phone numbers can expose you to harassment, spam, and bypasses platform safety." },
-  { word: "send me your number", level: "high", category: "Off-Platform Contact", reason: "Requesting someone's personal phone number is a red flag for off-platform solicitation." },
-  { word: "email", level: "high", category: "Off-Platform Contact", reason: "Email sharing is typically used to move communication off Fiverr, violating their Terms of Service." },
-  { word: "my email is", level: "high", category: "Off-Platform Contact", reason: "Sharing email addresses to conduct business outside Fiverr can result in account suspension." },
-  { word: "contact me directly", level: "high", category: "Off-Platform Contact", reason: "Directing contact outside Fiverr strips away dispute resolution and fraud protections." },
-  { word: "contact", level: "high", category: "Off-Platform Contact", reason: "Directing contact outside Fiverr strips away dispute resolution and fraud protections." },
-  { word: "dm me on", level: "high", category: "Off-Platform Contact", reason: "Requesting DMs on other platforms is a TOS violation and common scam vector." },
-  { word: "inbox me", level: "high", category: "Off-Platform Contact", reason: "Vague phrasing often used to redirect conversations to external platforms." },
-  { word: "private message", level: "high", category: "Off-Platform Contact", reason: "Soliciting private messages outside Fiverr bypasses platform monitoring and protection." },
-  { word: "reach out on", level: "high", category: "Off-Platform Contact", reason: "Directing someone to contact you elsewhere violates Fiverr's communication policy." },
-  { word: "linkedin", level: "high", category: "Social Media Bypass", reason: "Mentioning LinkedIn can indicate an attempt to redirect business or communication off Fiverr." },
-  { word: "twitter", level: "high", category: "Social Media Bypass", reason: "Social media references are often used to move transactions off-platform, violating TOS." },
-  { word: "x.com", level: "high", category: "Social Media Bypass", reason: "Linking to X/Twitter suggests off-platform contact or payment solicitation." },
-  { word: "snapchat", level: "high", category: "Social Media Bypass", reason: "Snapchat references in professional contexts are a red flag for off-platform activity." },
-  { word: "tiktok", level: "high", category: "Social Media Bypass", reason: "TikTok mentions may indicate redirection away from Fiverr's secure messaging system." },
-  { word: "pinterest", level: "high", category: "Social Media Bypass", reason: "Redirecting to Pinterest can be used to share portfolio or contact info outside TOS." },
-  { word: "youtube", level: "high", category: "Social Media Bypass", reason: "YouTube links may be used to bypass Fiverr review or direct external contact." },
-  { word: "facebook", level: "high", category: "Social Media Bypass", reason: "Facebook references often indicate an intent to communicate or transact off-platform." },
-  { word: "instagram", level: "high", category: "Social Media Bypass", reason: "Instagram links violate Fiverr TOS when used to solicit off-platform work or payment." },
-  { word: "send money", level: "high", category: "Payment Bypass", reason: "Requesting money outside Fiverr is a serious TOS violation and common fraud vector — you lose all buyer protection." },
-  { word: "transfer money", level: "high", category: "Payment Bypass", reason: "Money transfers outside Fiverr are irreversible and unprotected against scams." },
-  { word: "pay outside", level: "high", category: "Payment Bypass", reason: "Paying outside Fiverr voids all dispute protection and is explicitly against TOS." },
-  { word: "pay", level: "high", category: "Payment Bypass", reason: "This word may indicate an attempt to arrange payment outside Fiverr's secure checkout." },
-  { word: "payment", level: "high", category: "Payment Bypass", reason: "Payment-related language may signal attempts to move financial transactions off-platform." },
-  { word: "outside payment", level: "high", category: "Payment Bypass", reason: "Explicit off-platform payment solicitation — a direct TOS violation and scam risk." },
-  { word: "pay separately", level: "high", category: "Payment Bypass", reason: "Suggesting separate payment bypasses Fiverr's transaction system and buyer protections." },
-  { word: "western union", level: "high", category: "Payment Bypass", reason: "Western Union is a classic scam tool — Fiverr strictly prohibits its use for payments." },
-  { word: "moneygram", level: "high", category: "Payment Bypass", reason: "MoneyGram transfers are unrecoverable and prohibited for Fiverr transactions." },
-  { word: "skrill", level: "high", category: "Payment Bypass", reason: "Third-party payment processors like Skrill are not permitted in Fiverr transactions." },
-  { word: "cashapp", level: "high", category: "Payment Bypass", reason: "CashApp payments outside Fiverr bypass dispute resolution and violate TOS." },
-  { word: "venmo", level: "high", category: "Payment Bypass", reason: "Venmo transactions are unprotected and prohibited for Fiverr-related payments." },
-  { word: "wise transfer", level: "high", category: "Payment Bypass", reason: "Wire/bank transfers outside Fiverr are irreversible and violate platform policy." },
-  { word: "remitly", level: "high", category: "Payment Bypass", reason: "Third-party remittance apps violate Fiverr TOS and remove financial protections." },
-  { word: "http://", level: "high", category: "External Link", reason: "HTTP links can direct users to external sites for off-platform contact or payment, violating TOS." },
-  { word: "https://", level: "high", category: "External Link", reason: "External website links may be used to share contact info or redirect payments outside Fiverr." },
-  { word: ".com", level: "medium", category: "External Link", reason: "Domain mentions may indicate sharing of external websites for contact or portfolio, which can violate TOS." },
-  { word: ".net", level: "medium", category: "External Link", reason: "External domain references may signal off-platform communication or portfolio links." },
-  { word: ".org", level: "medium", category: "External Link", reason: "External domain references may be used to redirect users away from the platform." },
-  { word: "www.", level: "medium", category: "External Link", reason: "Website references can indicate an attempt to move communication or payment off Fiverr." },
-  { word: "portfolio link", level: "medium", category: "External Link", reason: "While portfolios are acceptable, sharing links may redirect clients off-platform." },
-  { word: "check my website", level: "medium", category: "External Link", reason: "Directing clients to external websites can violate Fiverr's communication policies." },
-  { word: "book a call", level: "medium", category: "External Meeting", reason: "Booking calls outside Fiverr's system removes the protection of on-platform records." },
-  { word: "jump on a call", level: "medium", category: "External Meeting", reason: "External calls are not monitored by Fiverr and remove dispute resolution coverage." },
-  { word: "quick call", level: "medium", category: "External Meeting", reason: "Suggesting calls outside platform channels can violate communication guidelines." },
-  { word: "video call", level: "medium", category: "External Meeting", reason: "Video calls arranged off Fiverr remove transaction transparency and dispute protection." },
-  { word: "voice call", level: "medium", category: "External Meeting", reason: "Unmonitored voice calls bypass Fiverr's dispute resolution and TOS guidelines." },
-  { word: "meeting link", level: "medium", category: "External Meeting", reason: "Sharing meeting links may indicate off-platform coordination, which can violate TOS." },
-  { word: "calendar link", level: "medium", category: "External Meeting", reason: "Calendar scheduling tools can be used to arrange off-platform meetings or calls." },
-  { word: "send otp", level: "high", category: "Sensitive Information", reason: "Requesting OTPs is a major red flag for account takeover scams — never share verification codes." },
-  { word: "verification code", level: "high", category: "Sensitive Information", reason: "Asking for verification codes is a clear sign of phishing or account hijacking." },
-  { word: "credit card", level: "high", category: "Sensitive Information", reason: "Requesting credit card details is a scam vector — Fiverr never asks for card info via chat." },
-  { word: "debit card", level: "high", category: "Sensitive Information", reason: "Sharing debit card info outside secure payment systems risks financial fraud." },
-  { word: "cvv", level: "high", category: "Sensitive Information", reason: "CVV codes are highly sensitive — requesting them is a serious financial fraud risk." },
-  { word: "pin code", level: "high", category: "Sensitive Information", reason: "PIN codes should never be shared; this is a critical phishing and fraud signal." },
-  { word: "bank details", level: "high", category: "Sensitive Information", reason: "Sharing banking information outside secure systems is a severe fraud risk." },
-  { word: "guaranteed profit", level: "high", category: "Scam Indicator", reason: "No legitimate investment or service guarantees profit — this is a classic scam tactic." },
-  { word: "double your money", level: "high", category: "Scam Indicator", reason: "Promises to double money are hallmarks of financial scams and Ponzi schemes." },
-  { word: "investment plan", level: "high", category: "Scam Indicator", reason: "Investment solicitations on Fiverr are prohibited and commonly associated with fraud." },
-  { word: "earn fast money", level: "high", category: "Scam Indicator", reason: "Get-rich-quick language is a major red flag for scams and violates Fiverr's policies." },
-  { word: "review", level: "high", category: "Review Manipulation", reason: "Mentioning reviews in messages can indicate manipulation attempts, which are strictly prohibited." },
-  { word: "positive review", level: "high", category: "Review Manipulation", reason: "Soliciting positive reviews violates Fiverr's review integrity policy." },
-  { word: "5 star review", level: "high", category: "Review Manipulation", reason: "Requesting 5-star reviews is a direct TOS violation and can result in account suspension." },
-  { word: "exchange review", level: "high", category: "Review Manipulation", reason: "Review exchanges are explicitly banned as they undermine platform trust." },
-  { word: "review in return", level: "high", category: "Review Manipulation", reason: "Offering services or perks in exchange for reviews is prohibited and can get you banned." },
-  { word: "feedback", level: "high", category: "Review Manipulation", reason: "Soliciting specific feedback can cross into review manipulation, which violates TOS." },
-  { word: "work outside fiverr", level: "high", category: "Off-Platform Work", reason: "Soliciting work outside Fiverr is a direct TOS violation and can result in permanent ban." },
-  { word: "long term outside", level: "high", category: "Off-Platform Work", reason: "Arranging ongoing work outside Fiverr bypasses platform fees and violates TOS." },
-  { word: "hire directly", level: "high", category: "Off-Platform Work", reason: "Direct hiring outside Fiverr is prohibited and removes buyer/seller protections." },
-  { word: "deal outside", level: "high", category: "Off-Platform Work", reason: "Off-platform deals violate Fiverr's Terms of Service and void all protections." },
-  { word: "chat", level: "low", category: "Communication Signal", reason: "Casual communication references — low risk but worth monitoring for off-platform intent." },
-  { word: "talk", level: "low", category: "Communication Signal", reason: "Vague communication language — usually harmless but may precede off-platform requests." },
-  { word: "reach", level: "low", category: "Communication Signal", reason: "Could indicate intent to contact outside platform — context-dependent risk." },
+  { word: "reach me on", level: "high", category: "Off-Platform Contact", reason: "Asking to be reached on external platforms bypasses Fiverr's communication policy and puts both parties at risk of scams and loss of protection.", fix: "reach me here in Fiverr chat" },
+  { word: "text", level: "high", category: "Off-Platform Contact", reason: "Requesting texts outside Fiverr removes all transaction records and voids buyer/seller protections.", fix: "message" },
+  { word: "call", level: "high", category: "Off-Platform Contact", reason: "Initiating calls outside Fiverr violates TOS and removes dispute resolution coverage.", fix: "Fiverr's call feature" },
+  { word: "number", level: "high", category: "Off-Platform Contact", reason: "Sharing personal phone numbers can expose you to harassment, spam, and bypasses platform safety.", fix: "Fiverr's messaging system" },
+  { word: "send me your number", level: "high", category: "Off-Platform Contact", reason: "Requesting someone's personal phone number is a red flag for off-platform solicitation.", fix: "" },
+  { word: "email", level: "high", category: "Off-Platform Contact", reason: "Email sharing is typically used to move communication off Fiverr, violating their Terms of Service.", fix: "Fiverr Inbox" },
+  { word: "my email is", level: "high", category: "Off-Platform Contact", reason: "Sharing email addresses to conduct business outside Fiverr can result in account suspension.", fix: "" },
+  { word: "contact me directly", level: "high", category: "Off-Platform Contact", reason: "Directing contact outside Fiverr strips away dispute resolution and fraud protections.", fix: "message me here on Fiverr" },
+  { word: "contact", level: "high", category: "Off-Platform Contact", reason: "Directing contact outside Fiverr strips away dispute resolution and fraud protections.", fix: "message" },
+  { word: "dm me on", level: "high", category: "Off-Platform Contact", reason: "Requesting DMs on other platforms is a TOS violation and common scam vector.", fix: "message me here on Fiverr" },
+  { word: "inbox me", level: "high", category: "Off-Platform Contact", reason: "Vague phrasing often used to redirect conversations to external platforms.", fix: "message me here on Fiverr" },
+  { word: "private message", level: "high", category: "Off-Platform Contact", reason: "Soliciting private messages outside Fiverr bypasses platform monitoring and protection.", fix: "Fiverr message" },
+  { word: "reach out on", level: "high", category: "Off-Platform Contact", reason: "Directing someone to contact you elsewhere violates Fiverr's communication policy.", fix: "message me here on Fiverr" },
+  { word: "linkedin", level: "high", category: "Social Media Bypass", reason: "Mentioning LinkedIn can indicate an attempt to redirect business or communication off Fiverr.", fix: "" },
+  { word: "twitter", level: "high", category: "Social Media Bypass", reason: "Social media references are often used to move transactions off-platform, violating TOS.", fix: "" },
+  { word: "x.com", level: "high", category: "Social Media Bypass", reason: "Linking to X/Twitter suggests off-platform contact or payment solicitation.", fix: "" },
+  { word: "snapchat", level: "high", category: "Social Media Bypass", reason: "Snapchat references in professional contexts are a red flag for off-platform activity.", fix: "" },
+  { word: "tiktok", level: "high", category: "Social Media Bypass", reason: "TikTok mentions may indicate redirection away from Fiverr's secure messaging system.", fix: "" },
+  { word: "pinterest", level: "high", category: "Social Media Bypass", reason: "Redirecting to Pinterest can be used to share portfolio or contact info outside TOS.", fix: "" },
+  { word: "youtube", level: "high", category: "Social Media Bypass", reason: "YouTube links may be used to bypass Fiverr review or direct external contact.", fix: "" },
+  { word: "facebook", level: "high", category: "Social Media Bypass", reason: "Facebook references often indicate an intent to communicate or transact off-platform.", fix: "" },
+  { word: "instagram", level: "high", category: "Social Media Bypass", reason: "Instagram links violate Fiverr TOS when used to solicit off-platform work or payment.", fix: "" },
+  { word: "send money", level: "high", category: "Payment Bypass", reason: "Requesting money outside Fiverr is a serious TOS violation and common fraud vector — you lose all buyer protection.", fix: "pay through Fiverr's secure checkout" },
+  { word: "transfer money", level: "high", category: "Payment Bypass", reason: "Money transfers outside Fiverr are irreversible and unprotected against scams.", fix: "pay through Fiverr's secure checkout" },
+  { word: "pay outside", level: "high", category: "Payment Bypass", reason: "Paying outside Fiverr voids all dispute protection and is explicitly against TOS.", fix: "pay through Fiverr" },
+  { word: "pay", level: "high", category: "Payment Bypass", reason: "This word may indicate an attempt to arrange payment outside Fiverr's secure checkout.", fix: "pay through Fiverr" },
+  { word: "payment", level: "high", category: "Payment Bypass", reason: "Payment-related language may signal attempts to move financial transactions off-platform.", fix: "Fiverr payment" },
+  { word: "outside payment", level: "high", category: "Payment Bypass", reason: "Explicit off-platform payment solicitation — a direct TOS violation and scam risk.", fix: "Fiverr payment" },
+  { word: "pay separately", level: "high", category: "Payment Bypass", reason: "Suggesting separate payment bypasses Fiverr's transaction system and buyer protections.", fix: "pay through Fiverr" },
+  { word: "western union", level: "high", category: "Payment Bypass", reason: "Western Union is a classic scam tool — Fiverr strictly prohibits its use for payments.", fix: "Fiverr's secure checkout" },
+  { word: "moneygram", level: "high", category: "Payment Bypass", reason: "MoneyGram transfers are unrecoverable and prohibited for Fiverr transactions.", fix: "Fiverr's secure checkout" },
+  { word: "skrill", level: "high", category: "Payment Bypass", reason: "Third-party payment processors like Skrill are not permitted in Fiverr transactions.", fix: "Fiverr's secure checkout" },
+  { word: "cashapp", level: "high", category: "Payment Bypass", reason: "CashApp payments outside Fiverr bypass dispute resolution and violate TOS.", fix: "Fiverr's secure checkout" },
+  { word: "venmo", level: "high", category: "Payment Bypass", reason: "Venmo transactions are unprotected and prohibited for Fiverr-related payments.", fix: "Fiverr's secure checkout" },
+  { word: "wise transfer", level: "high", category: "Payment Bypass", reason: "Wire/bank transfers outside Fiverr are irreversible and violate platform policy.", fix: "Fiverr's secure checkout" },
+  { word: "remitly", level: "high", category: "Payment Bypass", reason: "Third-party remittance apps violate Fiverr TOS and remove financial protections.", fix: "Fiverr's secure checkout" },
+  { word: "http://", level: "high", category: "External Link", reason: "HTTP links can direct users to external sites for off-platform contact or payment, violating TOS.", fix: "" },
+  { word: "https://", level: "high", category: "External Link", reason: "External website links may be used to share contact info or redirect payments outside Fiverr.", fix: "" },
+  { word: ".com", level: "medium", category: "External Link", reason: "Domain mentions may indicate sharing of external websites for contact or portfolio, which can violate TOS.", fix: "" },
+  { word: ".net", level: "medium", category: "External Link", reason: "External domain references may signal off-platform communication or portfolio links.", fix: "" },
+  { word: ".org", level: "medium", category: "External Link", reason: "External domain references may be used to redirect users away from the platform.", fix: "" },
+  { word: "www.", level: "medium", category: "External Link", reason: "Website references can indicate an attempt to move communication or payment off Fiverr.", fix: "" },
+  { word: "portfolio link", level: "medium", category: "External Link", reason: "While portfolios are acceptable, sharing links may redirect clients off-platform.", fix: "my Fiverr portfolio" },
+  { word: "check my website", level: "medium", category: "External Link", reason: "Directing clients to external websites can violate Fiverr's communication policies.", fix: "check my Fiverr gig gallery" },
+  { word: "book a call", level: "medium", category: "External Meeting", reason: "Booking calls outside Fiverr's system removes the protection of on-platform records.", fix: "schedule a Fiverr call" },
+  { word: "jump on a call", level: "medium", category: "External Meeting", reason: "External calls are not monitored by Fiverr and remove dispute resolution coverage.", fix: "hop on a Fiverr call" },
+  { word: "quick call", level: "medium", category: "External Meeting", reason: "Suggesting calls outside platform channels can violate communication guidelines.", fix: "quick Fiverr call" },
+  { word: "video call", level: "medium", category: "External Meeting", reason: "Video calls arranged off Fiverr remove transaction transparency and dispute protection.", fix: "Fiverr video call" },
+  { word: "voice call", level: "medium", category: "External Meeting", reason: "Unmonitored voice calls bypass Fiverr's dispute resolution and TOS guidelines.", fix: "Fiverr voice call" },
+  { word: "meeting link", level: "medium", category: "External Meeting", reason: "Sharing meeting links may indicate off-platform coordination, which can violate TOS.", fix: "Fiverr call scheduling" },
+  { word: "calendar link", level: "medium", category: "External Meeting", reason: "Calendar scheduling tools can be used to arrange off-platform meetings or calls.", fix: "Fiverr call scheduling" },
+  { word: "send otp", level: "high", category: "Sensitive Information", reason: "Requesting OTPs is a major red flag for account takeover scams — never share verification codes.", fix: "" },
+  { word: "verification code", level: "high", category: "Sensitive Information", reason: "Asking for verification codes is a clear sign of phishing or account hijacking.", fix: "" },
+  { word: "credit card", level: "high", category: "Sensitive Information", reason: "Requesting credit card details is a scam vector — Fiverr never asks for card info via chat.", fix: "" },
+  { word: "debit card", level: "high", category: "Sensitive Information", reason: "Sharing debit card info outside secure payment systems risks financial fraud.", fix: "" },
+  { word: "cvv", level: "high", category: "Sensitive Information", reason: "CVV codes are highly sensitive — requesting them is a serious financial fraud risk.", fix: "" },
+  { word: "pin code", level: "high", category: "Sensitive Information", reason: "PIN codes should never be shared; this is a critical phishing and fraud signal.", fix: "" },
+  { word: "bank details", level: "high", category: "Sensitive Information", reason: "Sharing banking information outside secure systems is a severe fraud risk.", fix: "" },
+  { word: "guaranteed profit", level: "high", category: "Scam Indicator", reason: "No legitimate investment or service guarantees profit — this is a classic scam tactic.", fix: "" },
+  { word: "double your money", level: "high", category: "Scam Indicator", reason: "Promises to double money are hallmarks of financial scams and Ponzi schemes.", fix: "" },
+  { word: "investment plan", level: "high", category: "Scam Indicator", reason: "Investment solicitations on Fiverr are prohibited and commonly associated with fraud.", fix: "" },
+  { word: "earn fast money", level: "high", category: "Scam Indicator", reason: "Get-rich-quick language is a major red flag for scams and violates Fiverr's policies.", fix: "" },
+  { word: "review", level: "high", category: "Review Manipulation", reason: "Mentioning reviews in messages can indicate manipulation attempts, which are strictly prohibited.", fix: "your feedback" },
+  { word: "positive review", level: "high", category: "Review Manipulation", reason: "Soliciting positive reviews violates Fiverr's review integrity policy.", fix: "your honest feedback" },
+  { word: "5 star review", level: "high", category: "Review Manipulation", reason: "Requesting 5-star reviews is a direct TOS violation and can result in account suspension.", fix: "your honest feedback" },
+  { word: "exchange review", level: "high", category: "Review Manipulation", reason: "Review exchanges are explicitly banned as they undermine platform trust.", fix: "" },
+  { word: "review in return", level: "high", category: "Review Manipulation", reason: "Offering services or perks in exchange for reviews is prohibited and can get you banned.", fix: "" },
+  { word: "feedback", level: "high", category: "Review Manipulation", reason: "Soliciting specific feedback can cross into review manipulation, which violates TOS.", fix: "your thoughts" },
+  { word: "work outside fiverr", level: "high", category: "Off-Platform Work", reason: "Soliciting work outside Fiverr is a direct TOS violation and can result in permanent ban.", fix: "" },
+  { word: "long term outside", level: "high", category: "Off-Platform Work", reason: "Arranging ongoing work outside Fiverr bypasses platform fees and violates TOS.", fix: "" },
+  { word: "hire directly", level: "high", category: "Off-Platform Work", reason: "Direct hiring outside Fiverr is prohibited and removes buyer/seller protections.", fix: "" },
+  { word: "deal outside", level: "high", category: "Off-Platform Work", reason: "Off-platform deals violate Fiverr's Terms of Service and void all protections.", fix: "" },
+  { word: "chat", level: "low", category: "Communication Signal", reason: "Casual communication references — low risk but worth monitoring for off-platform intent.", fix: "Fiverr message" },
+  { word: "talk", level: "low", category: "Communication Signal", reason: "Vague communication language — usually harmless but may precede off-platform requests.", fix: "connect" },
+  { word: "reach", level: "low", category: "Communication Signal", reason: "Could indicate intent to contact outside platform — context-dependent risk.", fix: "connect" },
+
+  // Messaging apps (Fiverr's Trust & Safety team and community reports repeatedly flag these as the #1 off-platform redirect vector)
+  { word: "whatsapp", level: "high", category: "Social Media Bypass", reason: "WhatsApp is the most commonly reported off-platform redirect tool on Fiverr and is explicitly against the off-platform activity policy.", fix: "" },
+  { word: "telegram", level: "high", category: "Social Media Bypass", reason: "Telegram handles are a well-documented scam and off-platform solicitation vector reported frequently by the Fiverr community.", fix: "" },
+  { word: "skype", level: "high", category: "Social Media Bypass", reason: "Requesting Skype contact moves communication outside Fiverr's monitored and protected messaging system.", fix: "" },
+  { word: "discord", level: "high", category: "Social Media Bypass", reason: "Discord invites are used to move conversations off Fiverr, which violates the off-platform activity policy.", fix: "" },
+  { word: "wechat", level: "high", category: "Social Media Bypass", reason: "WeChat contact requests are a common off-platform redirect method flagged by Fiverr's Trust & Safety team.", fix: "" },
+  { word: "viber", level: "high", category: "Social Media Bypass", reason: "Viber is an off-platform messaging app; sharing it removes Fiverr's dispute protection.", fix: "" },
+  { word: "signal app", level: "high", category: "Social Media Bypass", reason: "Signal is an encrypted off-platform app sometimes used to hide contact after redirecting away from Fiverr.", fix: "" },
+  { word: "imo", level: "medium", category: "Social Media Bypass", reason: "IMO is a messaging app referenced in off-platform contact attempts reported by sellers.", fix: "" },
+  { word: "kik", level: "medium", category: "Social Media Bypass", reason: "Kik usernames are used to move conversations off Fiverr's monitored system.", fix: "" },
+  { word: "line app", level: "medium", category: "Social Media Bypass", reason: "LINE is an off-platform messaging app referenced in redirect attempts.", fix: "" },
+
+  // Payment methods & financial details (Fiverr's Community Standards on financial safety and off-platform payment)
+  { word: "paypal", level: "high", category: "Payment Bypass", reason: "PayPal transfers outside Fiverr checkout are unprotected and explicitly against the off-platform payment policy.", fix: "Fiverr's secure checkout" },
+  { word: "zelle", level: "high", category: "Payment Bypass", reason: "Zelle payments are irreversible and prohibited for Fiverr transactions.", fix: "Fiverr's secure checkout" },
+  { word: "payoneer", level: "high", category: "Payment Bypass", reason: "Requesting Payoneer transfers outside Fiverr checkout bypasses buyer/seller protections.", fix: "Fiverr's secure checkout" },
+  { word: "stripe", level: "high", category: "Payment Bypass", reason: "Direct Stripe payment links move transactions outside Fiverr's protected checkout system.", fix: "Fiverr's secure checkout" },
+  { word: "bitcoin", level: "high", category: "Payment Bypass", reason: "Cryptocurrency payments are irreversible and a common scam vector; Fiverr requires payment through its own checkout.", fix: "" },
+  { word: "usdt", level: "high", category: "Payment Bypass", reason: "Crypto/stablecoin payment requests are a common fraud pattern and violate Fiverr's payment policy.", fix: "" },
+  { word: "crypto", level: "high", category: "Payment Bypass", reason: "Cryptocurrency payments bypass Fiverr's secure checkout and buyer protections entirely.", fix: "" },
+  { word: "bank transfer", level: "high", category: "Payment Bypass", reason: "Direct bank transfers are irreversible and prohibited as a way to pay for Fiverr work.", fix: "Fiverr's secure checkout" },
+  { word: "iban", level: "high", category: "Sensitive Information", reason: "Sharing an IBAN/bank account number outside secure systems is a serious financial fraud risk.", fix: "" },
+  { word: "routing number", level: "high", category: "Sensitive Information", reason: "Bank routing numbers should never be shared in chat; this is a critical fraud signal.", fix: "" },
+  { word: "gift card", level: "high", category: "Scam Indicator", reason: "Requests for payment via gift cards are one of the most common online scam patterns and are never a legitimate Fiverr payment method.", fix: "" },
+  { word: "itunes card", level: "high", category: "Scam Indicator", reason: "iTunes/Apple gift card requests are a classic untraceable-payment scam tactic.", fix: "" },
+  { word: "steam wallet", level: "high", category: "Scam Indicator", reason: "Steam Wallet code requests are a known scam payment method with no buyer protection.", fix: "" },
+
+  // Additional sensitive personal information
+  { word: "social security", level: "high", category: "Sensitive Information", reason: "Social Security numbers should never be requested or shared in a Fiverr chat — this is a severe identity-theft risk.", fix: "" },
+  { word: "passport number", level: "high", category: "Sensitive Information", reason: "Passport numbers are highly sensitive identity documents and should never be shared over chat.", fix: "" },
+  { word: "driver's license", level: "high", category: "Sensitive Information", reason: "Government ID numbers should never be shared in messages; this is a strong identity-theft red flag.", fix: "" },
+  { word: "swift code", level: "medium", category: "Sensitive Information", reason: "SWIFT/BIC codes combined with other banking details can enable unauthorized transfers.", fix: "" },
+
+  // Fee-avoidance language (a specific, frequently-cited off-platform work pattern)
+  { word: "avoid the fee", level: "high", category: "Off-Platform Work", reason: "Explicitly proposing to avoid Fiverr's service fee is solicitation of off-platform work and a direct TOS violation.", fix: "" },
+  { word: "save on fees", level: "high", category: "Off-Platform Work", reason: "Offering to save on fees by working outside Fiverr is prohibited off-platform solicitation.", fix: "" },
+  { word: "cheaper if we", level: "high", category: "Off-Platform Work", reason: "Offering a discount for moving off-platform is a direct TOS violation and voids buyer/seller protection.", fix: "" },
+  { word: "outside of fiverr", level: "high", category: "Off-Platform Work", reason: "Explicitly proposing to work outside Fiverr is prohibited and can result in permanent suspension.", fix: "" },
+
 ].sort((a, b) => b.word.length - a.word.length);
 
-const CATEGORIES = ["First Draft", "Meeting Approach", "Follow Up", "Delivery Message", "Revision / Adjustment","Extend Message", "General"];
+const CATEGORIES = ["First Draft", "Meeting Approach", "Follow Up", "Delivery Message", "Revision / Adjustment", "Extend Message", "General"];
 const APP_VERSION = "2.0.0";
 
 /* Seed content so the app never opens completely empty */
 const SEED_TEMPLATES = [
-  { id: "t1", name: "Initial Client Update", category: "First Draft", description: "Kick off a new order with a friendly status note.", content: "Hi! Thanks so much for your order. I'm getting started on it right away and will keep you posted on progress here in the Fiverr inbox.", tags: ["intro", "starter"], createdAt: Date.now() - 86400000 * 6, updatedAt: Date.now() - 86400000 * 6, riskStatus: "safe", riskScore: 0 },
-  { id: "t2", name: "Meeting Request", category: "Meeting Approach", description: "Ask to hop on a Fiverr voice/video session.", content: "Would you be open to a quick call through Fiverr's built-in voice feature so I can confirm a few details before I begin?", tags: ["scheduling"], createdAt: Date.now() - 86400000 * 5, updatedAt: Date.now() - 86400000 * 5, riskStatus: "medium", riskScore: 10 },
-  { id: "t3", name: "Project Follow Up", category: "Follow Up", description: "Check in on a quiet order.", content: "Hi, just checking in — have you had a chance to look over the last delivery? Let me know if anything needs adjusting.", tags: ["check-in"], createdAt: Date.now() - 86400000 * 3, updatedAt: Date.now() - 86400000 * 3, riskStatus: "safe", riskScore: 0 },
-  { id: "t4", name: "Project Delivery", category: "Delivery Message", description: "Deliver finished work with next steps.", content: "Your order is complete and delivered! Please review the files and let me know if you'd like any revisions before marking it complete.", tags: ["delivery"], createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2, riskStatus: "safe", riskScore: 0 },
-  { id: "t5", name: "Revision Request", category: "Revision / Adjustment", description: "Ask the client for clarification on changes.", content: "Thanks for the notes! Could you clarify which section you'd like adjusted so I can get the revision right the first time?", tags: ["revision"], createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000, riskStatus: "safe", riskScore: 0 },
-  { id: "t6", name: "Extend Delivery Time", category: "Extend Request", description: "Ask the client for extra time before the deadline.", content: "Hi, I'm working through the details carefully and want to make sure everything is right before delivery. Would it be okay to extend the deadline by a couple of days?", tags: ["extension", "deadline"], createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000, riskStatus: "safe", riskScore: 0 },
-
+  { id: "t1", name: "Initial Client Update", category: "First Draft", description: "Kick off a new order with a friendly status note.", content: "Hi! Thanks so much for your order. I'm getting started on it right away and will keep you posted on progress here in the Fiverr inbox.", tags: ["intro", "starter"], createdAt: Date.now() - 86400000 * 6, updatedAt: Date.now() - 86400000 * 6, riskStatus: "safe", riskScore: 0, pinned: true, usageCount: 4 },
+  { id: "t2", name: "Meeting Request", category: "Meeting Approach", description: "Ask to hop on a Fiverr voice/video session.", content: "Would you be open to a quick call through Fiverr's built-in voice feature so I can confirm a few details before I begin?", tags: ["scheduling"], createdAt: Date.now() - 86400000 * 5, updatedAt: Date.now() - 86400000 * 5, riskStatus: "medium", riskScore: 10, pinned: false, usageCount: 1 },
+  { id: "t3", name: "Project Follow Up", category: "Follow Up", description: "Check in on a quiet order.", content: "Hi, just checking in — have you had a chance to look over the last delivery? Let me know if anything needs adjusting.", tags: ["check-in"], createdAt: Date.now() - 86400000 * 3, updatedAt: Date.now() - 86400000 * 3, riskStatus: "safe", riskScore: 0, pinned: true, usageCount: 3 },
+  { id: "t4", name: "Project Delivery", category: "Delivery Message", description: "Deliver finished work with next steps.", content: "Your order is complete and delivered! Please review the files and let me know if you'd like any revisions before marking it complete.", tags: ["delivery"], createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2, riskStatus: "safe", riskScore: 0, pinned: false, usageCount: 2 },
+  { id: "t5", name: "Revision Request", category: "Revision / Adjustment", description: "Ask the client for clarification on changes.", content: "Thanks for the notes! Could you clarify which section you'd like adjusted so I can get the revision right the first time?", tags: ["revision"], createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000, riskStatus: "safe", riskScore: 0, pinned: false, usageCount: 0 },
+  { id: "t6", name: "Request Deadline Extension", category: "Extend Message", description: "Politely ask for a short extension before the delivery date.", content: "Hi! To make sure I deliver the best possible quality on this project, I'd like to request a short extension on the delivery date. Would an extra couple of days work on your end? I'll keep you updated with progress along the way — thank you for your understanding!", tags: ["extension", "deadline"], createdAt: Date.now() - 43200000, updatedAt: Date.now() - 43200000, riskStatus: "safe", riskScore: 0, pinned: false, usageCount: 0 },
 ];
 
 /* ======================================================================
-  SCANNER LOGIC (ported 1:1 from the original vanilla-JS scanner)
+   SCANNER LOGIC (ported 1:1 from the original vanilla-JS scanner)
 ====================================================================== */
 function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -129,6 +168,24 @@ function scanMessage(text) {
   else if (score >= 30) status = "medium";
   else if (score > 0) status = "low";
   return { found, highCount, medCount, lowCount, score, status };
+}
+
+/* Apply a single flagged word/phrase's suggested safe rewrite. An empty
+   `fix` means "remove it" rather than swap in a replacement. */
+function applyFix(text, item) {
+  const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+  const replaced = text.replace(regex, item.fix || "");
+  return replaced.replace(/[ \t]{2,}/g, " ").replace(/ +([,.!?])/g, "$1").trim();
+}
+
+/* Apply every currently-detected issue's fix in one pass. */
+function applyAllFixes(text, found) {
+  let next = text;
+  [...found].sort((a, b) => b.word.length - a.word.length).forEach((item) => {
+    next = applyFix(next, item);
+  });
+  return next;
 }
 
 function buildHighlightHtml(text, found) {
@@ -174,30 +231,28 @@ function uid() {
 }
 
 /* ======================================================================
-  STORAGE HELPERS (persistent artifact key-value storage)
+   STORAGE HELPERS (persistent artifact key-value storage)
 ====================================================================== */
 const STORE_KEY = "fiverr-safety-checker:state";
 
-function loadState() {
+async function loadState() {
   try {
-    const saved = localStorage.getItem(STORE_KEY);
-    return saved ? JSON.parse(saved) : null;
-  } catch (error) {
-    console.error("Load storage error:", error);
+    const res = await window.storage.get(STORE_KEY, false);
+    return res ? JSON.parse(res.value) : null;
+  } catch {
     return null;
   }
 }
-
-function saveState(state) {
+async function saveState(state) {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.error("Save storage error:", error);
+    await window.storage.set(STORE_KEY, JSON.stringify(state), false);
+  } catch (e) {
+    console.error("Storage error:", e);
   }
 }
 
 /* ======================================================================
-  SMALL SHARED UI PRIMITIVES
+   SMALL SHARED UI PRIMITIVES
 ====================================================================== */
 function Badge({ children, tone = "muted" }) {
   return <span className={`badge badge-${tone}`}>{children}</span>;
@@ -279,6 +334,74 @@ function ToastStack({ toasts }) {
   );
 }
 
+/* ======================================================================
+   COMMAND PALETTE (Ctrl/Cmd+K)
+====================================================================== */
+function CommandPalette({ open, onClose, onNavigate, templates, onUseTemplate }) {
+  const [query, setQuery] = useState("");
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (open) {
+      setQuery("");
+      setTimeout(() => inputRef.current?.focus(), 30);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const q = query.trim().toLowerCase();
+  const pages = NAV_ITEMS.filter((p) => !q || p.label.toLowerCase().includes(q));
+  const tpls = q ? templates.filter((t) => t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)).slice(0, 6) : [];
+
+  return (
+    <div className="modal-overlay palette-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="palette-card" role="dialog" aria-modal="true" aria-label="Command palette">
+        <div className="palette-search">
+          <Search size={16} />
+          <input
+            ref={inputRef}
+            placeholder="Jump to a page or template..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+          />
+          <span className="palette-kbd">Esc</span>
+        </div>
+        <div className="palette-results">
+          {pages.length > 0 && (
+            <div className="palette-group">
+              <span className="palette-group-title">Pages</span>
+              {pages.map((p) => (
+                <button key={p.id} className="palette-item" onClick={() => { onNavigate(p.id); onClose(); }}>
+                  <p.icon size={15} />
+                  <span>{p.label}</span>
+                  <ChevronRight size={13} className="palette-item-arrow" />
+                </button>
+              ))}
+            </div>
+          )}
+          {tpls.length > 0 && (
+            <div className="palette-group">
+              <span className="palette-group-title">Templates</span>
+              {tpls.map((t) => (
+                <button key={t.id} className="palette-item" onClick={() => { onUseTemplate(t); onClose(); }}>
+                  <Files size={15} />
+                  <span>{t.name}</span>
+                  <span className="palette-item-cat">{t.category}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {pages.length === 0 && tpls.length === 0 && (
+            <div className="palette-empty">No matches for &ldquo;{query}&rdquo;.</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RiskGauge({ score, status }) {
   const meta = statusMeta(status);
   const r = 52;
@@ -308,7 +431,7 @@ function CategoryPill({ value }) {
 }
 
 /* ======================================================================
-  SIDEBAR + HEADER
+   SIDEBAR + HEADER
 ====================================================================== */
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -319,7 +442,7 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
-function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggleTheme }) {
+function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggleTheme, onOpenPalette }) {
   return (
     <>
       {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} />}
@@ -332,6 +455,12 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggleTheme 
           </div>
           <button className="drawer-close" onClick={() => setMobileOpen(false)} aria-label="Close menu"><X size={18} /></button>
         </div>
+
+        <button className="palette-trigger" onClick={onOpenPalette}>
+          <Search size={13} />
+          <span>Quick jump</span>
+          <span className="palette-kbd"><Command size={10} />K</span>
+        </button>
 
         <nav className="sidebar-nav">
           {NAV_ITEMS.map((item) => (
@@ -384,7 +513,7 @@ function PageHeader({ title, subtitle, onMenu, right }) {
 }
 
 /* ======================================================================
-  DASHBOARD
+   DASHBOARD
 ====================================================================== */
 function Dashboard({ messages, templates, activity, setPage, startNewCheck }) {
   const safeCount = messages.filter((m) => m.riskStatus === "safe").length;
@@ -397,9 +526,20 @@ function Dashboard({ messages, templates, activity, setPage, startNewCheck }) {
     { label: "Saved Templates", value: templates.length, icon: Files, tone: "medium" },
   ];
 
+  const now = Date.now();
+  const oneWeek = 7 * 86400000;
+  const thisWeek = messages.filter((m) => now - m.createdAt < oneWeek);
+  const lastWeek = messages.filter((m) => now - m.createdAt >= oneWeek && now - m.createdAt < oneWeek * 2);
+  const thisWeekSafe = thisWeek.filter((m) => m.riskStatus === "safe").length;
+  const thisWeekAttention = thisWeek.length - thisWeekSafe;
+  const weekDelta = thisWeek.length - lastWeek.length;
+  const safePct = thisWeek.length ? Math.round((thisWeekSafe / thisWeek.length) * 100) : 0;
+
+  const topTemplates = [...templates].filter((t) => t.usageCount > 0).sort((a, b) => b.usageCount - a.usageCount).slice(0, 3);
+
   return (
     <div className="page-body">
-      <PageHeader title="Dashboard" subtitle="Your Fiverr message safety, at a glance." onMenu={() => { }} />
+      <PageHeader title="Dashboard" subtitle="Your Fiverr message safety, at a glance." onMenu={() => {}} />
 
       <div className="stat-grid">
         {stats.map((s) => (
@@ -429,6 +569,43 @@ function Dashboard({ messages, templates, activity, setPage, startNewCheck }) {
           <span>View Saved Messages</span>
           <ArrowRight size={14} className="qa-arrow" />
         </button>
+      </div>
+
+      <div className="week-card card">
+        <div className="card-head">
+          <span className="card-label">This Week</span>
+          {lastWeek.length > 0 && (
+            <span className={`week-delta ${weekDelta >= 0 ? "week-delta-up" : "week-delta-down"}`}>
+              <TrendingUp size={12} /> {weekDelta >= 0 ? "+" : ""}{weekDelta} vs last week
+            </span>
+          )}
+        </div>
+        <div className="week-body">
+          <div className="week-stat">
+            <span className="week-stat-value">{thisWeek.length}</span>
+            <span className="week-stat-label">Messages checked</span>
+          </div>
+          <div className="week-bar-wrap">
+            <div className="week-bar">
+              <div className="week-bar-fill" style={{ width: `${safePct}%` }} />
+            </div>
+            <div className="week-bar-legend">
+              <span><span className="dot dot-safe" /> {thisWeekSafe} safe</span>
+              <span><span className="dot dot-high" /> {thisWeekAttention} needed attention</span>
+            </div>
+          </div>
+          {topTemplates.length > 0 && (
+            <div className="week-top-templates">
+              <span className="week-stat-label">Most used templates</span>
+              {topTemplates.map((t) => (
+                <div className="week-top-row" key={t.id}>
+                  <span>{t.name}</span>
+                  <span className="usage-badge"><TrendingUp size={10} /> {t.usageCount}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="dash-columns">
@@ -482,9 +659,9 @@ function Dashboard({ messages, templates, activity, setPage, startNewCheck }) {
 }
 
 /* ======================================================================
-  MESSAGE CHECKER
+   MESSAGE CHECKER
 ====================================================================== */
-function IssueCard({ item }) {
+function IssueCard({ item, onFix }) {
   return (
     <div className={`issue-card issue-${item.level}`}>
       <div className="issue-top">
@@ -497,9 +674,18 @@ function IssueCard({ item }) {
         <span>{item.reason}</span>
       </div>
       <div className="issue-suggestion">
-        Suggested fix: remove or rephrase this and keep the conversation inside Fiverr's messaging and payment system.
+        {item.fix
+          ? <>Suggested fix: replace with <strong>&ldquo;{item.fix}&rdquo;</strong>.</>
+          : "Suggested fix: remove this phrase and keep the conversation inside Fiverr's messaging and payment system."}
       </div>
-      <div className="issue-cat">Category: {item.category}</div>
+      <div className="issue-bottom-row">
+        <div className="issue-cat">Category: {item.category}</div>
+        {onFix && (
+          <button type="button" className="fix-btn" onClick={() => onFix(item)}>
+            <Wand2 size={12} /> Apply fix
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -519,13 +705,21 @@ function MessageChecker({
     setText("");
     addToast("Message cleared.");
   };
+  const handleFixOne = (item) => {
+    setText((prev) => applyFix(prev, item));
+    addToast(`Rewrote "${item.word}".`);
+  };
+  const handleFixAll = () => {
+    setText((prev) => applyAllFixes(prev, scan.found));
+    addToast(`Applied ${scan.found.length} suggested fix${scan.found.length === 1 ? "" : "es"}.`);
+  };
 
   return (
     <div className="page-body">
       <PageHeader
         title="Message Checker"
         subtitle="Analyze your Fiverr messages before sending them."
-        onMenu={() => { }}
+        onMenu={() => {}}
         right={
           <div className="badge-live">
             <span className="live-dot" /> Live Scanning
@@ -602,7 +796,13 @@ function MessageChecker({
           <div className="card issues-card">
             <div className="card-head">
               <span className="card-label">Detected Issues</span>
-              <span className="char-meta">{scan.found.length} found</span>
+              {scan.found.length > 0 ? (
+                <button type="button" className="fix-all-btn" onClick={handleFixAll}>
+                  <Wand2 size={12} /> Fix all ({scan.found.length})
+                </button>
+              ) : (
+                <span className="char-meta">{scan.found.length} found</span>
+              )}
             </div>
             <div className="issues-body">
               {scan.found.length === 0 ? (
@@ -612,7 +812,7 @@ function MessageChecker({
                   <p>{text ? "No potential Fiverr policy violations detected." : "Start typing to scan your message."}</p>
                 </div>
               ) : (
-                scan.found.map((item) => <IssueCard key={item.word} item={item} />)
+                scan.found.map((item) => <IssueCard key={item.word} item={item} onFix={handleFixOne} />)
               )}
             </div>
           </div>
@@ -629,7 +829,7 @@ function MessageChecker({
 }
 
 /* ======================================================================
-  SAVE MESSAGE MODAL
+   SAVE MESSAGE MODAL
 ====================================================================== */
 function SaveMessageModal({ open, onClose, defaultContent, defaultCategory, onConfirm }) {
   const [title, setTitle] = useState("");
@@ -687,7 +887,7 @@ function SaveMessageModal({ open, onClose, defaultContent, defaultCategory, onCo
 }
 
 /* ======================================================================
-  TEMPLATE EDITOR MODAL
+   TEMPLATE EDITOR MODAL
 ====================================================================== */
 function TemplateModal({ open, onClose, initial, onConfirm, onScan }) {
   const [name, setName] = useState("");
@@ -770,15 +970,18 @@ function TemplateModal({ open, onClose, initial, onConfirm, onScan }) {
 }
 
 /* ======================================================================
-  TEMPLATES PAGE
+   TEMPLATES PAGE
 ====================================================================== */
-function TemplateCard({ tpl, onUse, onEdit, onDuplicate, onDelete, onCopy }) {
+function TemplateCard({ tpl, onUse, onEdit, onDuplicate, onDelete, onCopy, onTogglePin }) {
   const meta = statusMeta(tpl.riskStatus || "safe");
   return (
-    <div className="tpl-card">
+    <div className={`tpl-card${tpl.pinned ? " tpl-card-pinned" : ""}`}>
       <div className="tpl-top">
         <span className="tpl-name">{tpl.name}</span>
-        <span className="status-chip" style={{ color: meta.color, borderColor: meta.color }}>{meta.label}</span>
+        <div className="tpl-top-right">
+          {!!tpl.usageCount && <span className="usage-badge" title="Times used"><TrendingUp size={10} /> {tpl.usageCount}</span>}
+          <span className="status-chip" style={{ color: meta.color, borderColor: meta.color }}>{meta.label}</span>
+        </div>
       </div>
       <p className="tpl-desc">{tpl.description || "No description."}</p>
       <p className="tpl-preview">{tpl.content.slice(0, 110)}{tpl.content.length > 110 ? "…" : ""}</p>
@@ -788,6 +991,12 @@ function TemplateCard({ tpl, onUse, onEdit, onDuplicate, onDelete, onCopy }) {
       </div>
       <div className="tpl-actions">
         <Button tone="primary" icon={Send} onClick={() => onUse(tpl)}>Use</Button>
+        <IconButton
+          icon={Star}
+          label={tpl.pinned ? "Unpin" : "Pin to top"}
+          tone={tpl.pinned ? "pinned" : "ghost"}
+          onClick={() => onTogglePin(tpl)}
+        />
         <IconButton icon={Pencil} label="Edit" onClick={() => onEdit(tpl)} />
         <IconButton icon={Files} label="Duplicate" onClick={() => onDuplicate(tpl)} />
         <IconButton icon={CopyIcon} label="Copy" onClick={() => onCopy(tpl)} />
@@ -797,25 +1006,29 @@ function TemplateCard({ tpl, onUse, onEdit, onDuplicate, onDelete, onCopy }) {
   );
 }
 
-function TemplatesPage({ templates, onUse, onCreate, onEdit, onDuplicate, onDelete, onCopy }) {
+function TemplatesPage({ templates, onUse, onCreate, onEdit, onDuplicate, onDelete, onCopy, onTogglePin }) {
   const [filter, setFilter] = useState("All");
   const [query, setQuery] = useState("");
+  const [pinnedOnly, setPinnedOnly] = useState(false);
 
   const filtered = templates.filter((t) => {
     const matchesCat = filter === "All" || t.category === filter;
+    const matchesPin = !pinnedOnly || t.pinned;
     const q = query.trim().toLowerCase();
     const matchesQuery = !q || t.name.toLowerCase().includes(q) || t.content.toLowerCase().includes(q) || t.tags.join(" ").toLowerCase().includes(q);
-    return matchesCat && matchesQuery;
+    return matchesCat && matchesPin && matchesQuery;
   });
 
-  const grouped = CATEGORIES.map((c) => ({ category: c, items: filtered.filter((t) => t.category === c) })).filter((g) => g.items.length > 0);
+  const sortWithinGroup = (items) => [...items].sort((a, b) => (b.pinned - a.pinned) || (b.updatedAt - a.updatedAt));
+  const grouped = CATEGORIES.map((c) => ({ category: c, items: sortWithinGroup(filtered.filter((t) => t.category === c)) })).filter((g) => g.items.length > 0);
+  const pinnedCount = templates.filter((t) => t.pinned).length;
 
   return (
     <div className="page-body">
       <PageHeader
         title="Message Templates"
         subtitle="Reusable, pre-checked messages organized by category."
-        onMenu={() => { }}
+        onMenu={() => {}}
         right={<Button tone="primary" icon={Plus} onClick={onCreate}>New Template</Button>}
       />
 
@@ -828,20 +1041,25 @@ function TemplatesPage({ templates, onUse, onCreate, onEdit, onDuplicate, onDele
           {["All", ...CATEGORIES].map((c) => (
             <button key={c} className={`chip${filter === c ? " chip-active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
           ))}
+          {pinnedCount > 0 && (
+            <button className={`chip chip-star${pinnedOnly ? " chip-active" : ""}`} onClick={() => setPinnedOnly((v) => !v)}>
+              <Star size={11} /> Pinned ({pinnedCount})
+            </button>
+          )}
         </div>
       </div>
 
       {templates.length === 0 ? (
         <EmptyState icon={Files} title="No templates yet" subtitle="Create reusable, pre-checked messages for common situations." actionLabel="Create Template" onAction={onCreate} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={Search} title="No templates match your search" subtitle="Try a different keyword or category." />
+        <EmptyState icon={Search} title="No templates match your search" subtitle="Try a different keyword, category, or turn off the pinned filter." />
       ) : (
         grouped.map((g) => (
           <div className="tpl-group" key={g.category}>
             <h3 className="tpl-group-title">{g.category.toUpperCase()}</h3>
             <div className="tpl-grid">
               {g.items.map((t) => (
-                <TemplateCard key={t.id} tpl={t} onUse={onUse} onEdit={onEdit} onDuplicate={onDuplicate} onDelete={onDelete} onCopy={onCopy} />
+                <TemplateCard key={t.id} tpl={t} onUse={onUse} onEdit={onEdit} onDuplicate={onDuplicate} onDelete={onDelete} onCopy={onCopy} onTogglePin={onTogglePin} />
               ))}
             </div>
           </div>
@@ -852,7 +1070,7 @@ function TemplatesPage({ templates, onUse, onCreate, onEdit, onDuplicate, onDele
 }
 
 /* ======================================================================
-  INSERT TEMPLATE MODAL
+   INSERT TEMPLATE MODAL
 ====================================================================== */
 function InsertTemplateModal({ open, onClose, templates, onInsert }) {
   const [query, setQuery] = useState("");
@@ -889,7 +1107,7 @@ function InsertTemplateModal({ open, onClose, templates, onInsert }) {
 }
 
 /* ======================================================================
-  SAVED MESSAGES PAGE
+   SAVED MESSAGES PAGE
 ====================================================================== */
 function SavedMessages({ messages, onUse, onEdit, onDelete, onDuplicate, onCopy }) {
   const [query, setQuery] = useState("");
@@ -906,7 +1124,7 @@ function SavedMessages({ messages, onUse, onEdit, onDelete, onDuplicate, onCopy 
 
   return (
     <div className="page-body">
-      <PageHeader title="Saved Messages" subtitle="Search, filter, and reuse your saved Fiverr messages." onMenu={() => { }} />
+      <PageHeader title="Saved Messages" subtitle="Search, filter, and reuse your saved Fiverr messages." onMenu={() => {}} />
 
       <div className="filter-row">
         <div className="search-box">
@@ -999,7 +1217,7 @@ function SavedMessages({ messages, onUse, onEdit, onDelete, onDuplicate, onCopy 
 }
 
 /* ======================================================================
-  EDIT SAVED MESSAGE MODAL (reuses form styling)
+   EDIT SAVED MESSAGE MODAL (reuses form styling)
 ====================================================================== */
 function EditMessageModal({ open, onClose, message, onConfirm }) {
   const [title, setTitle] = useState("");
@@ -1045,12 +1263,12 @@ function EditMessageModal({ open, onClose, message, onConfirm }) {
 }
 
 /* ======================================================================
-  CATEGORIES PAGE
+   CATEGORIES PAGE
 ====================================================================== */
 function CategoriesPage({ messages, templates, setPage, setCheckerCategory }) {
   return (
     <div className="page-body">
-      <PageHeader title="Categories" subtitle="How your saved messages and templates break down." onMenu={() => { }} />
+      <PageHeader title="Categories" subtitle="How your saved messages and templates break down." onMenu={() => {}} />
       <div className="cat-grid">
         {CATEGORIES.map((c) => {
           const msgCount = messages.filter((m) => m.category === c).length;
@@ -1077,12 +1295,12 @@ function CategoriesPage({ messages, templates, setPage, setCheckerCategory }) {
 }
 
 /* ======================================================================
-  SETTINGS PAGE
+   SETTINGS PAGE
 ====================================================================== */
 function SettingsPage({ theme, toggleTheme, settings, setSettings, onClearMessages, onClearTemplates, onClearActivity }) {
   return (
     <div className="page-body">
-      <PageHeader title="Settings" subtitle="Manage appearance, preferences, and stored data." onMenu={() => { }} />
+      <PageHeader title="Settings" subtitle="Manage appearance, preferences, and stored data." onMenu={() => {}} />
 
       <div className="settings-section">
         <h3 className="settings-heading">Appearance</h3>
@@ -1151,7 +1369,7 @@ function SettingsPage({ theme, toggleTheme, settings, setSettings, onClearMessag
 }
 
 /* ======================================================================
-  ROOT APP
+   ROOT APP
 ====================================================================== */
 export default function App() {
   const [loaded, setLoaded] = useState(false);
@@ -1173,6 +1391,20 @@ export default function App() {
   const [editMessage, setEditMessage] = useState(null);
   const [insertOpen, setInsertOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  /* ---- Global Ctrl/Cmd+K shortcut for the command palette ---- */
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+      if (e.key === "Escape") setPaletteOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const [toasts, setToasts] = useState([]);
   const addToast = useCallback((message, tone = "success") => {
@@ -1187,17 +1419,17 @@ export default function App() {
 
   /* ---- Load persisted state once ---- */
   useEffect(() => {
-    const saved = loadState();
-
-    if (saved) {
-      if (saved.messages) setMessages(saved.messages);
-      if (saved.templates) setTemplates(saved.templates);
-      if (saved.activity) setActivity(saved.activity);
-      if (saved.settings) setSettings(saved.settings);
-      if (saved.theme) setTheme(saved.theme);
-    }
-
-    setLoaded(true);
+    (async () => {
+      const saved = await loadState();
+      if (saved) {
+        if (saved.messages) setMessages(saved.messages);
+        if (saved.templates) setTemplates(saved.templates);
+        if (saved.activity) setActivity(saved.activity);
+        if (saved.settings) setSettings(saved.settings);
+        if (saved.theme) setTheme(saved.theme);
+      }
+      setLoaded(true);
+    })();
   }, []);
 
   /* ---- Persist on change ---- */
@@ -1221,7 +1453,7 @@ export default function App() {
     const s = scanMessage(data.content);
     const newMsg = {
       id: uid(), title: data.title, category: data.category, content: data.content,
-      tags: data.tags, createdAt: now, updatedAt: now, riskStatus: s.status, riskScore: s.score,
+      tags: data.tags, createdAt: now, updatedAt: now, riskStatus: s.status, riskScore: s.score, usageCount: 0,
     };
     setMessages((m) => [newMsg, ...m]);
     addActivity(`Message saved — "${data.title}"`);
@@ -1264,6 +1496,7 @@ export default function App() {
     setText(m.content);
     setCategory(m.category);
     setPage("checker");
+    setMessages((list) => list.map((x) => x.id === m.id ? { ...x, usageCount: (x.usageCount || 0) + 1 } : x));
     addActivity(`Message loaded into checker — "${m.title}"`);
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
@@ -1271,7 +1504,7 @@ export default function App() {
   /* ---- Template actions ---- */
   const handleCreateTemplate = (data) => {
     const now = Date.now();
-    setTemplates((t) => [{ id: uid(), ...data, createdAt: now, updatedAt: now }, ...t]);
+    setTemplates((t) => [{ id: uid(), pinned: false, usageCount: 0, ...data, createdAt: now, updatedAt: now }, ...t]);
     addActivity(`Template saved — "${data.name}"`);
     addToast("Template created.");
     setTemplateModal({ open: false, initial: null });
@@ -1299,7 +1532,7 @@ export default function App() {
 
   const handleDuplicateTemplate = (t) => {
     const now = Date.now();
-    setTemplates((list) => [{ ...t, id: uid(), name: `${t.name} (copy)`, createdAt: now, updatedAt: now }, ...list]);
+    setTemplates((list) => [{ ...t, id: uid(), name: `${t.name} (copy)`, pinned: false, usageCount: 0, createdAt: now, updatedAt: now }, ...list]);
     addToast("Template duplicated.");
   };
 
@@ -1307,10 +1540,16 @@ export default function App() {
     navigator.clipboard.writeText(t.content).then(() => addToast("Template content copied."));
   };
 
+  const handleTogglePin = (t) => {
+    setTemplates((list) => list.map((x) => x.id === t.id ? { ...x, pinned: !x.pinned } : x));
+    addToast(t.pinned ? "Unpinned template." : "Pinned to top.");
+  };
+
   const handleUseTemplate = (t) => {
     setText(t.content);
     setCategory(t.category);
     setPage("checker");
+    setTemplates((list) => list.map((x) => x.id === t.id ? { ...x, usageCount: (x.usageCount || 0) + 1 } : x));
     addActivity(`Template inserted — "${t.name}"`);
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
@@ -1318,6 +1557,7 @@ export default function App() {
   const handleInsertTemplate = (t) => {
     setText((prev) => (prev ? `${prev}\n${t.content}` : t.content));
     setCategory(t.category);
+    setTemplates((list) => list.map((x) => x.id === t.id ? { ...x, usageCount: (x.usageCount || 0) + 1 } : x));
     setInsertOpen(false);
     addToast("Template inserted.");
   };
@@ -1339,7 +1579,7 @@ export default function App() {
     <div className={`app-root theme-${theme}`} data-theme={theme}>
       <style>{CSS}</style>
 
-      <Sidebar page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} />
+      <Sidebar page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)} />
 
       <main className="main-area">
         <div className="mobile-topbar">
@@ -1368,6 +1608,7 @@ export default function App() {
             onDuplicate={handleDuplicateTemplate}
             onDelete={handleDeleteTemplate}
             onCopy={handleCopyTemplate}
+            onTogglePin={handleTogglePin}
           />
         )}
 
@@ -1404,317 +1645,360 @@ export default function App() {
       <EditMessageModal open={!!editMessage} message={editMessage} onClose={() => setEditMessage(null)} onConfirm={handleEditMessage} />
       <InsertTemplateModal open={insertOpen} onClose={() => setInsertOpen(false)} templates={templates} onInsert={handleInsertTemplate} />
       <ConfirmDialog config={confirmDialog} onClose={() => setConfirmDialog(null)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNavigate={setPage} templates={templates} onUseTemplate={handleUseTemplate} />
       <ToastStack toasts={toasts} />
     </div>
   );
 }
 
 /* ======================================================================
-  STYLES
+   STYLES
 ====================================================================== */
 const CSS = `
-  :root {}
-  .app-root {
-    --bg: #080b12; --surface: #0e1220; --surface2: #161b2e; --surface3: #1d2340;
-    --border: #1f2640; --border2: #2a3260; --text: #e2e8ff; --text2: #8892b0; --muted: #5a6590;
-    --accent: #4f9eff; --accent-fg: #04101f;
-    --high: #ff4d6d; --high-bg: rgba(255,77,109,0.10); --high-border: rgba(255,77,109,0.3);
-    --medium: #ffb020; --medium-bg: rgba(255,176,32,0.10); --medium-border: rgba(255,176,32,0.3);
-    --low: #22d3a5; --low-bg: rgba(34,211,165,0.10); --low-border: rgba(34,211,165,0.3);
-    --safe: #22d3a5;
-    font-family: 'Space Grotesk', 'DM Sans', sans-serif;
-    background: var(--bg); color: var(--text);
-    display: flex; min-height: 640px; width: 100%;
-    border-radius: 14px; overflow: hidden;
-    position: relative;
-  }
-  .app-root.theme-light {
-    --bg: #f4f6fb; --surface: #ffffff; --surface2: #f0f2f9; --surface3: #e6e9f5;
-    --border: #e1e5f2; --border2: #d3d9ec; --text: #10152a; --text2: #5b6482; --muted: #93a0c6;
-    --accent: #2f6fe0; --accent-fg: #ffffff;
-  }
-  .app-root * { box-sizing: border-box; }
-  .mono { font-family: 'JetBrains Mono', 'DM Mono', monospace; }
+:root {}
+.app-root {
+  --bg: #080b12; --surface: #0e1220; --surface2: #161b2e; --surface3: #1d2340;
+  --border: #1f2640; --border2: #2a3260; --text: #e2e8ff; --text2: #8892b0; --muted: #5a6590;
+  --accent: #4f9eff; --accent-fg: #04101f;
+  --high: #ff4d6d; --high-bg: rgba(255,77,109,0.10); --high-border: rgba(255,77,109,0.3);
+  --medium: #ffb020; --medium-bg: rgba(255,176,32,0.10); --medium-border: rgba(255,176,32,0.3);
+  --low: #22d3a5; --low-bg: rgba(34,211,165,0.10); --low-border: rgba(34,211,165,0.3);
+  --safe: #22d3a5;
+  font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+  background: var(--bg); color: var(--text);
+  display: flex; min-height: 640px; width: 100%;
+  border-radius: 14px; overflow: hidden;
+  position: relative;
+}
+.app-root.theme-light {
+  --bg: #f4f6fb; --surface: #ffffff; --surface2: #f0f2f9; --surface3: #e6e9f5;
+  --border: #e1e5f2; --border2: #d3d9ec; --text: #10152a; --text2: #5b6482; --muted: #93a0c6;
+  --accent: #2f6fe0; --accent-fg: #ffffff;
+}
+.app-root * { box-sizing: border-box; }
+.mono { font-family: 'JetBrains Mono', 'DM Mono', monospace; }
 
-  /* SIDEBAR */
-  .sidebar {
-    width: 246px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; padding: 18px 14px; gap: 16px;
-  }
-  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 14px; border-bottom: 1px solid var(--border); position: relative; }
-  .brand-shield { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), #2a5fc7); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
-  .sidebar-brand h1 { font-size: 13.5px; font-weight: 700; line-height: 1.2; }
-  .sidebar-brand p { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px; margin-top: 2px; }
-  .drawer-close { display: none; }
-  .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; background: transparent; border: none; color: var(--text2); font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; position: relative; transition: background .15s, color .15s; }
-  .nav-item:hover { background: var(--surface2); color: var(--text); }
-  .nav-item-active { background: var(--surface2); color: var(--accent); }
-  .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-left: auto; }
-  .sidebar-footer { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-  .theme-toggle { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text2); font-size: 12px; cursor: pointer; }
-  .theme-toggle:hover { color: var(--text); border-color: var(--border2); }
-  .theme-toggle-inline { width: fit-content; }
-  .profile-row { display: flex; align-items: center; gap: 9px; }
-  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
-  .profile-meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-  .profile-name { font-size: 12px; font-weight: 600; }
-  .profile-role { font-size: 10.5px; color: var(--muted); }
+/* SIDEBAR */
+.sidebar {
+  width: 246px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; padding: 18px 14px; gap: 16px;
+}
+.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 14px; border-bottom: 1px solid var(--border); position: relative; }
+.brand-shield { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), #2a5fc7); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+.sidebar-brand h1 { font-size: 13.5px; font-weight: 700; line-height: 1.2; }
+.sidebar-brand p { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px; margin-top: 2px; }
+.drawer-close { display: none; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; background: transparent; border: none; color: var(--text2); font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; position: relative; transition: background .15s, color .15s; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item-active { background: var(--surface2); color: var(--accent); }
+.nav-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-left: auto; }
+.sidebar-footer { border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.theme-toggle { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text2); font-size: 12px; cursor: pointer; }
+.theme-toggle:hover { color: var(--text); border-color: var(--border2); }
+.theme-toggle-inline { width: fit-content; }
+.profile-row { display: flex; align-items: center; gap: 9px; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+.profile-meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.profile-name { font-size: 12px; font-weight: 600; }
+.profile-role { font-size: 10.5px; color: var(--muted); }
 
-  .drawer-backdrop { display: none; }
+.drawer-backdrop { display: none; }
+.palette-trigger { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--muted); font-size: 12px; cursor: pointer; width: 100%; }
+.palette-trigger:hover { color: var(--text); border-color: var(--border2); }
+.palette-trigger span:first-of-type { flex: 1; text-align: left; }
+.palette-kbd { display: inline-flex; align-items: center; gap: 2px; font-size: 9.5px; font-family: 'JetBrains Mono', monospace; background: var(--surface3); border: 1px solid var(--border2); border-radius: 4px; padding: 1px 5px; color: var(--muted); }
+.palette-overlay { align-items: flex-start; padding-top: 12vh; }
+.palette-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; max-width: 480px; box-shadow: 0 24px 60px rgba(0,0,0,0.55); overflow: hidden; }
+.palette-search { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--muted); }
+.palette-search input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 14px; font-family: inherit; }
+.palette-results { max-height: 360px; overflow-y: auto; padding: 8px; }
+.palette-group { margin-bottom: 6px; }
+.palette-group-title { display: block; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 6px 8px 4px; }
+.palette-item { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; background: none; border: none; border-radius: 8px; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; }
+.palette-item:hover { background: var(--surface2); }
+.palette-item-arrow { margin-left: auto; color: var(--muted); }
+.palette-item-cat { margin-left: auto; font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.palette-empty { padding: 24px 12px; text-align: center; font-size: 12.5px; color: var(--muted); }
 
-  /* MAIN AREA */
-  .main-area { flex: 1; min-width: 0; overflow-y: auto; background: var(--bg); background-image: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(79,158,255,0.06) 0%, transparent 60%); }
-  .mobile-topbar { display: none; }
-  .page-body { padding: 24px 28px 40px; max-width: 1180px; margin: 0 auto; }
-  .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
-  .page-header-left { display: flex; align-items: flex-start; gap: 10px; }
-  .page-header h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
-  .page-header p { font-size: 12.5px; color: var(--text2); margin-top: 3px; }
-  .menu-btn { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px; color: var(--text2); cursor: pointer; }
+/* MAIN AREA */
+.main-area { flex: 1; min-width: 0; overflow-y: auto; background: var(--bg); background-image: radial-gradient(ellipse 70% 50% at 15% 0%, rgba(79,158,255,0.06) 0%, transparent 60%); }
+.mobile-topbar { display: none; }
+.page-body { padding: 24px 28px 40px; max-width: 1180px; margin: 0 auto; }
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+.page-header-left { display: flex; align-items: flex-start; gap: 10px; }
+.page-header h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+.page-header p { font-size: 12.5px; color: var(--text2); margin-top: 3px; }
+.menu-btn { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px; color: var(--text2); cursor: pointer; }
 
-  .badge-live { display: flex; align-items: center; gap: 7px; padding: 7px 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
-  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--safe); box-shadow: 0 0 8px var(--safe); animation: blink 2s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.badge-live { display: flex; align-items: center; gap: 7px; padding: 7px 13px; background: var(--surface); border: 1px solid var(--border); border-radius: 100px; font-size: 11px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--safe); box-shadow: 0 0 8px var(--safe); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-  /* CARD */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
-  .card-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--border); }
-  .card-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 8px; }
-  .card-label::before { content: ''; width: 3px; height: 13px; background: var(--accent); border-radius: 2px; }
-  .char-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); }
-  .link-btn { background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 0; }
-  .link-btn:hover { text-decoration: underline; }
+/* CARD */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
+.card-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+.card-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 8px; }
+.card-label::before { content: ''; width: 3px; height: 13px; background: var(--accent); border-radius: 2px; }
+.char-meta { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); }
+.link-btn { background: none; border: none; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 0; }
+.link-btn:hover { text-decoration: underline; }
 
-  /* STAT GRID */
-  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; }
-  .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .stat-icon-accent { background: rgba(79,158,255,0.14); color: var(--accent); }
-  .stat-icon-low { background: var(--low-bg); color: var(--low); }
-  .stat-icon-high { background: var(--high-bg); color: var(--high); }
-  .stat-icon-medium { background: var(--medium-bg); color: var(--medium); }
-  .stat-value { display: block; font-size: 21px; font-weight: 700; line-height: 1.1; }
-  .stat-label { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; }
+/* STAT GRID */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px; }
+.stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stat-icon-accent { background: rgba(79,158,255,0.14); color: var(--accent); }
+.stat-icon-low { background: var(--low-bg); color: var(--low); }
+.stat-icon-high { background: var(--high-bg); color: var(--high); }
+.stat-icon-medium { background: var(--medium-bg); color: var(--medium); }
+.stat-value { display: block; font-size: 21px; font-weight: 700; line-height: 1.1; }
+.stat-label { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; }
 
-  /* QUICK ACTIONS */
-  .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
-  .qa-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px 16px; display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color .15s, transform .15s; }
-  .qa-card:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .qa-card svg:first-child { color: var(--accent); }
-  .qa-arrow { margin-left: auto; color: var(--muted); }
+/* QUICK ACTIONS */
+.quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+.qa-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px 16px; display: flex; align-items: center; gap: 10px; color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color .15s, transform .15s; }
+.qa-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.qa-card svg:first-child { color: var(--accent); }
+.qa-arrow { margin-left: auto; color: var(--muted); }
 
-  /* DASHBOARD COLUMNS */
-  .dash-columns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
-  .list-body { padding: 8px; max-height: 380px; overflow-y: auto; }
-  .recent-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 10px; border-radius: 8px; gap: 10px; }
-  .recent-row:hover { background: var(--surface2); }
-  .recent-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .recent-title { font-size: 13px; font-weight: 600; }
-  .recent-cat { font-size: 11px; color: var(--muted); }
-  .recent-row-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-  .recent-time { font-size: 10.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
-  .activity-row { display: flex; align-items: center; gap: 9px; padding: 9px 10px; font-size: 12.5px; }
-  .activity-check { color: var(--low); flex-shrink: 0; }
-  .activity-label { flex: 1; color: var(--text2); }
-  .activity-time { font-size: 10.5px; color: var(--muted); flex-shrink: 0; }
+/* DASHBOARD COLUMNS */
+.week-card { margin-bottom: 16px; }
+.week-delta { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.week-delta-up { color: var(--low); }
+.week-delta-down { color: var(--muted); }
+.week-body { padding: 16px; display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: center; }
+.week-stat { display: flex; flex-direction: column; gap: 3px; }
+.week-stat-value { font-size: 28px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.week-stat-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.week-bar-wrap { display: flex; flex-direction: column; gap: 8px; min-width: 160px; }
+.week-bar { height: 8px; border-radius: 100px; background: var(--high-bg); overflow: hidden; }
+.week-bar-fill { height: 100%; background: var(--safe); border-radius: 100px; transition: width .5s; }
+.week-bar-legend { display: flex; gap: 14px; font-size: 11px; color: var(--text2); }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.dot-safe { background: var(--safe); } .dot-high { background: var(--high); }
+.week-top-templates { display: flex; flex-direction: column; gap: 6px; min-width: 170px; }
+.week-top-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; gap: 8px; }
+.dash-columns { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.list-body { padding: 8px; max-height: 380px; overflow-y: auto; }
+.recent-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 10px; border-radius: 8px; gap: 10px; }
+.recent-row:hover { background: var(--surface2); }
+.recent-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.recent-title { font-size: 13px; font-weight: 600; }
+.recent-cat { font-size: 11px; color: var(--muted); }
+.recent-row-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.recent-time { font-size: 10.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.activity-row { display: flex; align-items: center; gap: 9px; padding: 9px 10px; font-size: 12.5px; }
+.activity-check { color: var(--low); flex-shrink: 0; }
+.activity-label { flex: 1; color: var(--text2); }
+.activity-time { font-size: 10.5px; color: var(--muted); flex-shrink: 0; }
 
-  /* STATUS CHIP / BADGE / PILL */
-  .status-chip { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 9px; border-radius: 100px; border: 1px solid; }
-  .cat-pill { font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 100px; background: var(--surface3); color: var(--text2); }
-  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 5px 10px; border-radius: 100px; border: 1px solid var(--border); }
-  .badge-muted { color: var(--text2); }
+/* STATUS CHIP / BADGE / PILL */
+.status-chip { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 9px; border-radius: 100px; border: 1px solid; }
+.cat-pill { font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 100px; background: var(--surface3); color: var(--text2); }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 5px 10px; border-radius: 100px; border: 1px solid var(--border); }
+.badge-muted { color: var(--text2); }
 
-  /* CHECKER GRID */
-  .checker-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; margin-bottom: 16px; }
-  .composer-toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-  .field-label { font-size: 11px; font-weight: 600; color: var(--text2); display: flex; flex-direction: column; gap: 6px; }
-  .field-hint { font-weight: 400; color: var(--muted); font-size: 10.5px; }
-  .select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
-  .select-sm { padding: 7px 9px; }
-  .insert-link { margin-left: auto; }
-  .composer-textarea { width: 100%; min-height: 260px; padding: 16px; background: transparent; border: none; outline: none; resize: vertical; font-size: 14px; font-family: 'Space Grotesk', sans-serif; color: var(--text); line-height: 1.7; }
-  .composer-textarea::placeholder { color: var(--muted); }
-  .composer-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
-  .composer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* CHECKER GRID */
+.checker-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; margin-bottom: 16px; }
+.composer-toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.field-label { font-size: 11px; font-weight: 600; color: var(--text2); display: flex; flex-direction: column; gap: 6px; }
+.field-hint { font-weight: 400; color: var(--muted); font-size: 10.5px; }
+.select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
+.select-sm { padding: 7px 9px; }
+.insert-link { margin-left: auto; }
+.composer-textarea { width: 100%; min-height: 260px; padding: 16px; background: transparent; border: none; outline: none; resize: vertical; font-size: 14px; font-family: 'Space Grotesk', sans-serif; color: var(--text); line-height: 1.7; }
+.composer-textarea::placeholder { color: var(--muted); }
+.composer-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+.composer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-  .analysis-col { display: flex; flex-direction: column; gap: 16px; }
-  .status-body { display: flex; align-items: center; gap: 16px; padding: 16px; }
-  .gauge { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
-  .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .gauge-score { font-size: 26px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .gauge-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
-  .status-side { display: flex; flex-direction: column; gap: 6px; }
-  .status-side-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .status-side-value { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.analysis-col { display: flex; flex-direction: column; gap: 16px; }
+.status-body { display: flex; align-items: center; gap: 16px; padding: 16px; }
+.gauge { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.gauge-score { font-size: 26px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.gauge-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.status-side { display: flex; flex-direction: column; gap: 6px; }
+.status-side-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.status-side-value { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 
-  .risk-pills { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
-  .risk-pill { padding: 13px 8px; text-align: center; border-right: 1px solid var(--border); transition: background .3s; }
-  .risk-pill:last-child { border-right: none; }
-  .pill-count { display: block; font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .pill-label { display: block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px; opacity: 0.75; }
-  .risk-pill.high { color: var(--high); } .risk-pill.med { color: var(--medium); } .risk-pill.low { color: var(--low); }
-  .risk-pill.high.active { background: var(--high-bg); } .risk-pill.med.active { background: var(--medium-bg); } .risk-pill.low.active { background: var(--low-bg); }
+.risk-pills { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
+.risk-pill { padding: 13px 8px; text-align: center; border-right: 1px solid var(--border); transition: background .3s; }
+.risk-pill:last-child { border-right: none; }
+.pill-count { display: block; font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.pill-label { display: block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-top: 3px; opacity: 0.75; }
+.risk-pill.high { color: var(--high); } .risk-pill.med { color: var(--medium); } .risk-pill.low { color: var(--low); }
+.risk-pill.high.active { background: var(--high-bg); } .risk-pill.med.active { background: var(--medium-bg); } .risk-pill.low.active { background: var(--low-bg); }
 
-  .issues-body { padding: 10px; max-height: 320px; overflow-y: auto; }
-  .issue-card { padding: 11px 12px; border-radius: 9px; margin-bottom: 7px; border: 1px solid transparent; }
-  .issue-high { background: var(--high-bg); border-color: var(--high-border); }
-  .issue-medium { background: var(--medium-bg); border-color: var(--medium-border); }
-  .issue-low { background: var(--low-bg); border-color: var(--low-border); }
-  .issue-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .issue-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .issue-dot-high { background: var(--high); } .issue-dot-medium { background: var(--medium); } .issue-dot-low { background: var(--low); }
-  .issue-keyword { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; flex: 1; }
-  .issue-high .issue-keyword { color: var(--high); } .issue-medium .issue-keyword { color: var(--medium); } .issue-low .issue-keyword { color: var(--low); }
-  .issue-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 7px; border-radius: 4px; }
-  .issue-badge-high { background: var(--high); color: #fff; } .issue-badge-medium { background: var(--medium); color: #1a1200; } .issue-badge-low { background: var(--low); color: #04231b; }
-  .flag-notice { display: flex; gap: 7px; background: rgba(0,0,0,0.15); border-radius: 6px; padding: 7px 9px; font-size: 11.5px; line-height: 1.5; color: var(--text2); }
-  .flag-icon { flex-shrink: 0; margin-top: 1px; opacity: .8; }
-  .issue-suggestion { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
-  .issue-cat { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); text-transform: uppercase; letter-spacing: 0.5px; }
+.issues-body { padding: 10px; max-height: 320px; overflow-y: auto; }
+.issue-card { padding: 11px 12px; border-radius: 9px; margin-bottom: 7px; border: 1px solid transparent; }
+.issue-high { background: var(--high-bg); border-color: var(--high-border); }
+.issue-medium { background: var(--medium-bg); border-color: var(--medium-border); }
+.issue-low { background: var(--low-bg); border-color: var(--low-border); }
+.issue-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.issue-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.issue-dot-high { background: var(--high); } .issue-dot-medium { background: var(--medium); } .issue-dot-low { background: var(--low); }
+.issue-keyword { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; flex: 1; }
+.issue-high .issue-keyword { color: var(--high); } .issue-medium .issue-keyword { color: var(--medium); } .issue-low .issue-keyword { color: var(--low); }
+.issue-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 7px; border-radius: 4px; }
+.issue-badge-high { background: var(--high); color: #fff; } .issue-badge-medium { background: var(--medium); color: #1a1200; } .issue-badge-low { background: var(--low); color: #04231b; }
+.flag-notice { display: flex; gap: 7px; background: rgba(0,0,0,0.15); border-radius: 6px; padding: 7px 9px; font-size: 11.5px; line-height: 1.5; color: var(--text2); }
+.flag-icon { flex-shrink: 0; margin-top: 1px; opacity: .8; }
+.issue-suggestion { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+.issue-bottom-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); }
+.issue-cat { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.fix-btn { display: inline-flex; align-items: center; gap: 5px; background: rgba(79,158,255,0.12); color: var(--accent); border: 1px solid rgba(79,158,255,0.3); font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.fix-btn:hover { background: rgba(79,158,255,0.2); }
+.fix-all-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: var(--accent-fg); border: none; font-size: 10.5px; font-weight: 700; padding: 6px 11px; border-radius: 100px; cursor: pointer; }
+.fix-all-btn:hover { filter: brightness(1.08); }
 
-  .preview-card { position: relative; }
-  .preview-body { padding: 16px 18px; min-height: 90px; font-size: 14px; line-height: 1.75; word-break: break-word; }
-  .preview-placeholder { position: absolute; top: 46px; left: 18px; color: var(--muted); font-size: 12.5px; pointer-events: none; }
-  .h-high, .h-medium, .h-low { border-radius: 3px; padding: 0 2px; font-weight: 700; cursor: help; }
-  .h-high { background: var(--high-bg); color: var(--high); border-bottom: 1.5px solid var(--high); }
-  .h-medium { background: var(--medium-bg); color: var(--medium); border-bottom: 1.5px solid var(--medium); }
-  .h-low { background: var(--low-bg); color: var(--low); border-bottom: 1.5px solid var(--low); }
-  .tooltip-wrap { position: relative; display: inline; }
-  .tooltip { visibility: hidden; opacity: 0; pointer-events: none; position: absolute; z-index: 999; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px); min-width: 220px; max-width: 280px; background: #0e1a30; border: 1px solid #2a3260; border-radius: 9px; padding: 10px 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); transition: opacity .18s, transform .18s; display: block; }
-  .tooltip-wrap:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
-  .tt-header { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; padding-bottom: 7px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .tt-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
-  .tt-dot-high { background: var(--high); } .tt-dot-medium { background: var(--medium); } .tt-dot-low { background: var(--low); }
-  .tt-word { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; flex: 1; color: #e2e8ff; }
-  .tt-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; color: #fff; }
-  .tt-badge-high { background: var(--high); } .tt-badge-medium { background: var(--medium); color: #1a1200; } .tt-badge-low { background: var(--low); color: #04231b; }
-  .tt-reason { font-size: 11.5px; line-height: 1.55; color: #b7c0e0; display: block; }
-  .tt-category { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #7480a8; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); display: block; text-transform: uppercase; }
+.preview-card { position: relative; }
+.preview-body { padding: 16px 18px; min-height: 90px; font-size: 14px; line-height: 1.75; word-break: break-word; }
+.preview-placeholder { position: absolute; top: 46px; left: 18px; color: var(--muted); font-size: 12.5px; pointer-events: none; }
+.h-high, .h-medium, .h-low { border-radius: 3px; padding: 0 2px; font-weight: 700; cursor: help; }
+.h-high { background: var(--high-bg); color: var(--high); border-bottom: 1.5px solid var(--high); }
+.h-medium { background: var(--medium-bg); color: var(--medium); border-bottom: 1.5px solid var(--medium); }
+.h-low { background: var(--low-bg); color: var(--low); border-bottom: 1.5px solid var(--low); }
+.tooltip-wrap { position: relative; display: inline; }
+.tooltip { visibility: hidden; opacity: 0; pointer-events: none; position: absolute; z-index: 999; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px); min-width: 220px; max-width: 280px; background: #0e1a30; border: 1px solid #2a3260; border-radius: 9px; padding: 10px 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); transition: opacity .18s, transform .18s; display: block; }
+.tooltip-wrap:hover .tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+.tt-header { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; padding-bottom: 7px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.tt-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.tt-dot-high { background: var(--high); } .tt-dot-medium { background: var(--medium); } .tt-dot-low { background: var(--low); }
+.tt-word { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; flex: 1; color: #e2e8ff; }
+.tt-badge { font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; color: #fff; }
+.tt-badge-high { background: var(--high); } .tt-badge-medium { background: var(--medium); color: #1a1200; } .tt-badge-low { background: var(--low); color: #04231b; }
+.tt-reason { font-size: 11.5px; line-height: 1.55; color: #b7c0e0; display: block; }
+.tt-category { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #7480a8; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); display: block; text-transform: uppercase; }
 
-  /* EMPTY STATE */
-  .empty-state { padding: 40px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .empty-icon { color: var(--muted); margin-bottom: 4px; }
-  .empty-state h4 { font-size: 13.5px; color: var(--text); font-weight: 700; }
-  .empty-state p { font-size: 12px; line-height: 1.6; max-width: 300px; margin-bottom: 8px; }
+/* EMPTY STATE */
+.empty-state { padding: 40px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.empty-icon { color: var(--muted); margin-bottom: 4px; }
+.empty-state h4 { font-size: 13.5px; color: var(--text); font-weight: 700; }
+.empty-state p { font-size: 12px; line-height: 1.6; max-width: 300px; margin-bottom: 8px; }
 
-  /* BUTTONS */
-  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: all .15s; white-space: nowrap; }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-full { width: 100%; justify-content: center; }
-  .btn-primary { background: var(--accent); color: var(--accent-fg); }
-  .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
-  .btn-secondary { background: var(--surface2); color: var(--text); border-color: var(--border); }
-  .btn-secondary:hover:not(:disabled) { border-color: var(--border2); }
-  .btn-ghost { background: transparent; color: var(--text2); border-color: var(--border); }
-  .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--border2); }
-  .btn-danger { background: transparent; color: var(--high); border-color: var(--high-border); }
-  .btn-danger:hover:not(:disabled) { background: var(--high-bg); }
-  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); cursor: pointer; }
-  .icon-btn:hover { color: var(--text); border-color: var(--border2); }
-  .icon-btn-danger:hover { color: var(--high); border-color: var(--high-border); background: var(--high-bg); }
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: all .15s; white-space: nowrap; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-full { width: 100%; justify-content: center; }
+.btn-primary { background: var(--accent); color: var(--accent-fg); }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-secondary { background: var(--surface2); color: var(--text); border-color: var(--border); }
+.btn-secondary:hover:not(:disabled) { border-color: var(--border2); }
+.btn-ghost { background: transparent; color: var(--text2); border-color: var(--border); }
+.btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--border2); }
+.btn-danger { background: transparent; color: var(--high); border-color: var(--high-border); }
+.btn-danger:hover:not(:disabled) { background: var(--high-bg); }
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); cursor: pointer; }
+.icon-btn:hover { color: var(--text); border-color: var(--border2); }
+.icon-btn-danger:hover { color: var(--high); border-color: var(--high-border); background: var(--high-bg); }
 
-  /* FILTER ROW / SEARCH / CHIPS */
-  .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
-  .search-box { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; flex: 1; min-width: 200px; color: var(--muted); }
-  .search-box input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
-  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { background: var(--surface); border: 1px solid var(--border); color: var(--text2); font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 100px; cursor: pointer; }
-  .chip-active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+/* FILTER ROW / SEARCH / CHIPS */
+.filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; flex: 1; min-width: 200px; color: var(--muted); }
+.search-box input { background: none; border: none; outline: none; color: var(--text); font-size: 13px; width: 100%; font-family: inherit; }
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { background: var(--surface); border: 1px solid var(--border); color: var(--text2); font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 100px; cursor: pointer; }
+.chip-active { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 
-  /* TEMPLATES */
-  .tpl-group { margin-bottom: 22px; }
-  .tpl-group-title { font-size: 10.5px; font-weight: 700; letter-spacing: 1px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
-  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-  .tpl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-  .tpl-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .tpl-name { font-size: 13.5px; font-weight: 700; }
-  .tpl-desc { font-size: 11.5px; color: var(--text2); }
-  .tpl-preview { font-size: 12px; color: var(--muted); line-height: 1.5; }
-  .tpl-meta-row { display: flex; align-items: center; justify-content: space-between; }
-  .tpl-date { font-size: 10.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
-  .tpl-actions { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+/* TEMPLATES */
+.tpl-group { margin-bottom: 22px; }
+.tpl-group-title { font-size: 10.5px; font-weight: 700; letter-spacing: 1px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tpl-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+.tpl-card-pinned { border-color: rgba(255,176,32,0.35); box-shadow: 0 0 0 1px rgba(255,176,32,0.12); }
+.tpl-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tpl-top-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tpl-name { font-size: 13.5px; font-weight: 700; }
+.tpl-desc { font-size: 11.5px; color: var(--text2); }
+.usage-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; color: var(--muted); background: var(--surface3); padding: 2px 6px; border-radius: 100px; }
+.icon-btn-pinned { color: var(--medium); border-color: var(--medium-border); background: var(--medium-bg); }
+.chip-star { display: inline-flex; align-items: center; gap: 5px; }
+.tpl-preview { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.tpl-meta-row { display: flex; align-items: center; justify-content: space-between; }
+.tpl-date { font-size: 10.5px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+.tpl-actions { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 
-  /* TABLE */
-  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
-  .msg-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-  .msg-table th { text-align: left; padding: 12px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
-  .msg-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  .msg-table tr:last-child td { border-bottom: none; }
-  .table-title { display: block; font-weight: 600; font-size: 13px; }
-  .table-preview { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; }
-  .table-time { color: var(--text2); white-space: nowrap; }
-  .table-actions { display: flex; gap: 5px; }
-  .msg-card-list { display: none; flex-direction: column; gap: 12px; }
-  .msg-mobile-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+/* TABLE */
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.msg-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.msg-table th { text-align: left; padding: 12px 16px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
+.msg-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.msg-table tr:last-child td { border-bottom: none; }
+.table-title { display: block; font-weight: 600; font-size: 13px; }
+.table-preview { display: block; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.table-time { color: var(--text2); white-space: nowrap; }
+.table-actions { display: flex; gap: 5px; }
+.msg-card-list { display: none; flex-direction: column; gap: 12px; }
+.msg-mobile-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
 
-  /* CATEGORIES */
-  .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-  .cat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-  .cat-card-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--accent); }
-  .cat-card-stats { display: flex; gap: 20px; }
-  .cat-num { display: block; font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-  .cat-num-label { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+/* CATEGORIES */
+.cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.cat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.cat-card-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--accent); }
+.cat-card-stats { display: flex; gap: 20px; }
+.cat-num { display: block; font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.cat-num-label { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
 
-  /* SETTINGS */
-  .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px 18px; margin-bottom: 16px; }
-  .settings-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 14px 0 4px; }
-  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-top: 1px solid var(--border); gap: 14px; flex-wrap: wrap; }
-  .settings-section .settings-heading + .settings-row { border-top: none; }
-  .settings-row-title { font-size: 13px; font-weight: 600; }
-  .settings-row-sub { font-size: 11.5px; color: var(--text2); margin-top: 2px; }
+/* SETTINGS */
+.settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px 18px; margin-bottom: 16px; }
+.settings-heading { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 14px 0 4px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-top: 1px solid var(--border); gap: 14px; flex-wrap: wrap; }
+.settings-section .settings-heading + .settings-row { border-top: none; }
+.settings-row-title { font-size: 13px; font-weight: 600; }
+.settings-row-sub { font-size: 11.5px; color: var(--text2); margin-top: 2px; }
 
-  /* MODALS */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(3,5,12,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-  .modal-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,0.5); max-height: 88vh; display: flex; flex-direction: column; }
-  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
-  .modal-head h3 { font-size: 15px; font-weight: 700; }
-  .modal-body { padding: 18px; overflow-y: auto; }
-  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--border); }
-  .confirm-message { font-size: 13px; color: var(--text2); line-height: 1.6; padding: 0 0 4px; }
-  .form-grid { display: flex; flex-direction: column; gap: 14px; }
-  .text-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: inherit; width: 100%; outline: none; }
-  .text-input:focus { border-color: var(--accent); }
-  .textarea-sm { resize: vertical; line-height: 1.6; }
-  .inline-scan-result { font-size: 11.5px; font-weight: 600; padding: 8px 10px; border-radius: 7px; background: var(--surface2); }
-  .inline-scan-high { color: var(--high); } .inline-scan-medium { color: var(--medium); } .inline-scan-low { color: var(--low); } .inline-scan-safe { color: var(--safe); }
+/* MODALS */
+.modal-overlay { position: fixed; inset: 0; background: rgba(3,5,12,0.6); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,0.5); max-height: 88vh; display: flex; flex-direction: column; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
+.modal-head h3 { font-size: 15px; font-weight: 700; }
+.modal-body { padding: 18px; overflow-y: auto; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--border); }
+.confirm-message { font-size: 13px; color: var(--text2); line-height: 1.6; padding: 0 0 4px; }
+.form-grid { display: flex; flex-direction: column; gap: 14px; }
+.text-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: inherit; width: 100%; outline: none; }
+.text-input:focus { border-color: var(--accent); }
+.textarea-sm { resize: vertical; line-height: 1.6; }
+.inline-scan-result { font-size: 11.5px; font-weight: 600; padding: 8px 10px; border-radius: 7px; background: var(--surface2); }
+.inline-scan-high { color: var(--high); } .inline-scan-medium { color: var(--medium); } .inline-scan-low { color: var(--low); } .inline-scan-safe { color: var(--safe); }
 
-  /* INSERT TEMPLATE LIST */
-  .insert-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
-  .insert-group-title { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
-  .insert-item { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; margin-bottom: 6px; }
-  .insert-item:hover { border-color: var(--accent); }
+/* INSERT TEMPLATE LIST */
+.insert-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+.insert-group-title { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+.insert-item { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; margin-bottom: 6px; }
+.insert-item:hover { border-color: var(--accent); }
 
-  /* TOASTS */
-  .toast-stack { position: fixed; bottom: 22px; right: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 1200; }
-  .toast { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); color: var(--text); padding: 10px 14px; border-radius: 9px; font-size: 12.5px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: toastIn .2s ease; }
-  .toast-danger { border-color: var(--high-border); color: var(--high); }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* TOASTS */
+.toast-stack { position: fixed; bottom: 22px; right: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 1200; }
+.toast { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); color: var(--text); padding: 10px 14px; border-radius: 9px; font-size: 12.5px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: toastIn .2s ease; }
+.toast-danger { border-color: var(--high-border); color: var(--high); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* RESPONSIVE */
-  @media (max-width: 980px) {
-    .checker-grid { grid-template-columns: 1fr; }
-    .dash-columns { grid-template-columns: 1fr; }
-    .stat-grid { grid-template-columns: 1fr 1fr; }
-    .quick-actions { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 800px) {
-    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 1100; transform: translateX(-100%); transition: transform .25s ease; box-shadow: 20px 0 40px rgba(0,0,0,0.4); }
-    .sidebar-open { transform: translateX(0); }
-    .drawer-close { display: inline-flex; margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; }
-    .drawer-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; }
-    .mobile-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 40; }
-    .mobile-brand { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; }
-    .menu-btn { display: inline-flex; }
-    .page-header-left .menu-btn { display: none; }
-    .table-wrap { display: none; }
-    .msg-card-list { display: flex; }
-    .stat-grid { grid-template-columns: 1fr 1fr; }
-    .page-body { padding: 16px 14px 32px; }
-  }
-  @media (max-width: 480px) {
-    .stat-grid { grid-template-columns: 1fr; }
-    .status-body { flex-direction: column; text-align: center; }
-  }
-  `;
-
+/* RESPONSIVE */
+@media (max-width: 980px) {
+  .checker-grid { grid-template-columns: 1fr; }
+  .dash-columns { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .quick-actions { grid-template-columns: 1fr; }
+}
+@media (max-width: 800px) {
+  .sidebar { position: fixed; top: 0; left: 0; bottom: 0; z-index: 1100; transform: translateX(-100%); transition: transform .25s ease; box-shadow: 20px 0 40px rgba(0,0,0,0.4); }
+  .sidebar-open { transform: translateX(0); }
+  .drawer-close { display: inline-flex; margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; }
+  .drawer-backdrop { display: block; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; }
+  .mobile-topbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); z-index: 40; }
+  .mobile-brand { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; }
+  .menu-btn { display: inline-flex; }
+  .page-header-left .menu-btn { display: none; }
+  .table-wrap { display: none; }
+  .msg-card-list { display: flex; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .page-body { padding: 16px 14px 32px; }
+  .week-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr; }
+  .status-body { flex-direction: column; text-align: center; }
+}
+`;
