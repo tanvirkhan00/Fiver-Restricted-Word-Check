@@ -5,7 +5,7 @@ import {
   Files, X, Check, AlertTriangle, Info, ChevronDown, Menu, Sun, Moon, Clock,
   FileText, Send, ArrowRight, Filter, ShieldCheck, ShieldAlert, ShieldX,
   ListChecks, Save, ClipboardList, ChevronRight, Star, Command, TrendingUp, Wand2,
-  Download, Upload, DatabaseBackup
+  Download, Upload, DatabaseBackup, Ban, ToggleLeft, ToggleRight, PlusCircle, ShieldOff
 } from "lucide-react";
 
 /* ======================================================================
@@ -149,10 +149,10 @@ function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function scanMessage(text) {
+function scanMessage(text, wordList = RESTRICTED_WORDS) {
   const found = [];
   const foundWords = new Set();
-  RESTRICTED_WORDS.forEach((item) => {
+  wordList.forEach((item) => {
     const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`\\b${escaped}\\b`, "gi");
     if (regex.test(text) && !foundWords.has(item.word.toLowerCase())) {
@@ -187,6 +187,24 @@ function applyAllFixes(text, found) {
     next = applyFix(next, item);
   });
   return next;
+}
+
+/* Combine the built-in word list (minus anything the user disabled) with
+   the user's own custom words (only the enabled ones), for scanning. */
+function buildWordList(disabledBuiltinWords, customWords) {
+  const disabled = new Set((disabledBuiltinWords || []).map((w) => w.toLowerCase()));
+  const builtinActive = RESTRICTED_WORDS.filter((w) => !disabled.has(w.word.toLowerCase()));
+  const customActive = (customWords || [])
+    .filter((w) => w.enabled)
+    .map((w) => ({
+      word: w.word,
+      level: w.level,
+      category: w.category || "Custom",
+      reason: w.reason || "Custom restricted word added by you.",
+      fix: w.fix || "",
+      custom: true,
+    }));
+  return [...builtinActive, ...customActive].sort((a, b) => b.word.length - a.word.length);
 }
 
 function buildHighlightHtml(text, found) {
@@ -431,6 +449,29 @@ function CategoryPill({ value }) {
   return <span className="cat-pill">{value}</span>;
 }
 
+/* Type-or-pick category input. Backed by a native <datalist> so people get
+   autocomplete suggestions from existing categories but can freely type
+   a brand-new one — saving a message with it is what "creates" it. */
+function CategoryField({ id, value, onChange, categories, label = "Category" }) {
+  const listId = `${id}-catlist`;
+  return (
+    <label className="field-label" htmlFor={id}>
+      {label} <span className="field-hint">(pick one or type a new category)</span>
+      <input
+        id={id}
+        list={listId}
+        className="text-input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="e.g. General"
+      />
+      <datalist id={listId}>
+        {categories.map((c) => <option key={c} value={c} />)}
+      </datalist>
+    </label>
+  );
+}
+
 /* ======================================================================
    SIDEBAR + HEADER
 ====================================================================== */
@@ -439,6 +480,7 @@ const NAV_ITEMS = [
   { id: "checker", label: "Message Checker", icon: MessageSquareText },
   { id: "templates", label: "Message Templates", icon: Files },
   { id: "saved", label: "Saved Messages", icon: BookmarkCheck },
+  { id: "words", label: "Restricted Words", icon: Ban },
   { id: "categories", label: "Categories", icon: Tags },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -692,7 +734,7 @@ function IssueCard({ item, onFix }) {
 }
 
 function MessageChecker({
-  text, setText, category, setCategory, scan, onSave, onOpenInsert, addToast, textareaRef,
+  text, setText, category, setCategory, categories, scan, onSave, onOpenInsert, addToast, textareaRef,
 }) {
   const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   const meta = statusMeta(scan.status);
@@ -737,10 +779,18 @@ function MessageChecker({
           </div>
 
           <div className="composer-toolbar">
-            <label className="field-label" htmlFor="category-select">Category</label>
-            <select id="category-select" className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <label className="field-label field-label-inline" htmlFor="category-select">Category</label>
+            <input
+              id="category-select"
+              list="checker-category-list"
+              className="select"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Choose or type a category"
+            />
+            <datalist id="checker-category-list">
+              {categories.map((c) => <option key={c} value={c} />)}
+            </datalist>
             <button className="link-btn insert-link" onClick={onOpenInsert}>
               <Files size={13} /> Insert Template
             </button>
@@ -832,7 +882,7 @@ function MessageChecker({
 /* ======================================================================
    SAVE MESSAGE MODAL
 ====================================================================== */
-function SaveMessageModal({ open, onClose, defaultContent, defaultCategory, onConfirm }) {
+function SaveMessageModal({ open, onClose, defaultContent, defaultCategory, categories, onConfirm }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(defaultCategory || "General");
   const [content, setContent] = useState(defaultContent || "");
@@ -853,11 +903,7 @@ function SaveMessageModal({ open, onClose, defaultContent, defaultCategory, onCo
         <label className="field-label">Title
           <input className="text-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Website Update Follow Up" autoFocus />
         </label>
-        <label className="field-label">Category
-          <select className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
+        <CategoryField id="save-msg-category" value={category} onChange={setCategory} categories={categories} />
         <label className="field-label">Content
           <textarea className="text-input textarea-sm" value={content} onChange={(e) => setContent(e.target.value)} rows={5} />
         </label>
@@ -890,7 +936,7 @@ function SaveMessageModal({ open, onClose, defaultContent, defaultCategory, onCo
 /* ======================================================================
    TEMPLATE EDITOR MODAL
 ====================================================================== */
-function TemplateModal({ open, onClose, initial, onConfirm, onScan }) {
+function TemplateModal({ open, onClose, initial, categories, wordList, onConfirm }) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("General");
   const [description, setDescription] = useState("");
@@ -915,11 +961,7 @@ function TemplateModal({ open, onClose, initial, onConfirm, onScan }) {
         <label className="field-label">Template Name
           <input className="text-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Meeting Request" autoFocus />
         </label>
-        <label className="field-label">Category
-          <select className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
+        <CategoryField id="tpl-category" value={category} onChange={setCategory} categories={categories} />
         <label className="field-label">Description
           <input className="text-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short summary of when to use this" />
         </label>
@@ -934,7 +976,7 @@ function TemplateModal({ open, onClose, initial, onConfirm, onScan }) {
           type="button"
           className="link-btn"
           style={{ justifySelf: "start" }}
-          onClick={() => setPreview(scanMessage(content))}
+          onClick={() => setPreview(scanMessage(content, wordList))}
         >
           <ShieldCheck size={13} /> Run safety check before saving
         </button>
@@ -951,7 +993,7 @@ function TemplateModal({ open, onClose, initial, onConfirm, onScan }) {
           icon={Save}
           disabled={!name.trim() || !content.trim()}
           onClick={() => {
-            const scan = scanMessage(content);
+            const scan = scanMessage(content, wordList);
             onConfirm({
               name: name.trim(),
               category,
@@ -1007,7 +1049,7 @@ function TemplateCard({ tpl, onUse, onEdit, onDuplicate, onDelete, onCopy, onTog
   );
 }
 
-function TemplatesPage({ templates, onUse, onCreate, onEdit, onDuplicate, onDelete, onCopy, onTogglePin }) {
+function TemplatesPage({ templates, categories, onUse, onCreate, onEdit, onDuplicate, onDelete, onCopy, onTogglePin }) {
   const [filter, setFilter] = useState("All");
   const [query, setQuery] = useState("");
   const [pinnedOnly, setPinnedOnly] = useState(false);
@@ -1021,7 +1063,7 @@ function TemplatesPage({ templates, onUse, onCreate, onEdit, onDuplicate, onDele
   });
 
   const sortWithinGroup = (items) => [...items].sort((a, b) => (b.pinned - a.pinned) || (b.updatedAt - a.updatedAt));
-  const grouped = CATEGORIES.map((c) => ({ category: c, items: sortWithinGroup(filtered.filter((t) => t.category === c)) })).filter((g) => g.items.length > 0);
+  const grouped = categories.map((c) => ({ category: c, items: sortWithinGroup(filtered.filter((t) => t.category === c)) })).filter((g) => g.items.length > 0);
   const pinnedCount = templates.filter((t) => t.pinned).length;
 
   return (
@@ -1039,7 +1081,7 @@ function TemplatesPage({ templates, onUse, onCreate, onEdit, onDuplicate, onDele
           <input placeholder="Search templates..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="chip-row">
-          {["All", ...CATEGORIES].map((c) => (
+          {["All", ...categories].map((c) => (
             <button key={c} className={`chip${filter === c ? " chip-active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
           ))}
           {pinnedCount > 0 && (
@@ -1081,7 +1123,8 @@ function InsertTemplateModal({ open, onClose, templates, onInsert }) {
     const q = query.trim().toLowerCase();
     return !q || t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
   });
-  const grouped = CATEGORIES.map((c) => ({ category: c, items: filtered.filter((t) => t.category === c) })).filter((g) => g.items.length > 0);
+  const groupCats = Array.from(new Set(filtered.map((t) => t.category)));
+  const grouped = groupCats.map((c) => ({ category: c, items: filtered.filter((t) => t.category === c) })).filter((g) => g.items.length > 0);
 
   return (
     <Modal open={open} onClose={onClose} title="Insert Template" width={480}>
@@ -1110,7 +1153,7 @@ function InsertTemplateModal({ open, onClose, templates, onInsert }) {
 /* ======================================================================
    SAVED MESSAGES PAGE
 ====================================================================== */
-function SavedMessages({ messages, onUse, onEdit, onDelete, onDuplicate, onCopy }) {
+function SavedMessages({ messages, categories, onUse, onEdit, onDelete, onDuplicate, onCopy }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [sort, setSort] = useState("newest");
@@ -1133,7 +1176,7 @@ function SavedMessages({ messages, onUse, onEdit, onDelete, onDuplicate, onCopy 
           <input placeholder="Search saved messages..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
         <div className="chip-row">
-          {["All", ...CATEGORIES].map((c) => (
+          {["All", ...categories].map((c) => (
             <button key={c} className={`chip${filter === c ? " chip-active" : ""}`} onClick={() => setFilter(c)}>{c}</button>
           ))}
         </div>
@@ -1220,7 +1263,7 @@ function SavedMessages({ messages, onUse, onEdit, onDelete, onDuplicate, onCopy 
 /* ======================================================================
    EDIT SAVED MESSAGE MODAL (reuses form styling)
 ====================================================================== */
-function EditMessageModal({ open, onClose, message, onConfirm }) {
+function EditMessageModal({ open, onClose, message, categories, onConfirm }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("General");
   const [content, setContent] = useState("");
@@ -1241,11 +1284,7 @@ function EditMessageModal({ open, onClose, message, onConfirm }) {
         <label className="field-label">Title
           <input className="text-input" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
-        <label className="field-label">Category
-          <select className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </label>
+        <CategoryField id="edit-msg-category" value={category} onChange={setCategory} categories={categories} />
         <label className="field-label">Content
           <textarea className="text-input textarea-sm" value={content} onChange={(e) => setContent(e.target.value)} rows={5} />
         </label>
@@ -1264,14 +1303,204 @@ function EditMessageModal({ open, onClose, message, onConfirm }) {
 }
 
 /* ======================================================================
+   RESTRICTED WORDS PAGE — view, enable/disable built-in words, and
+   add/edit/remove your own custom words, right from the UI.
+====================================================================== */
+function WordFormModal({ open, onClose, initial, categories, onConfirm }) {
+  const [word, setWord] = useState("");
+  const [level, setLevel] = useState("high");
+  const [category, setCategory] = useState("Custom");
+  const [reason, setReason] = useState("");
+  const [fix, setFix] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setWord(initial?.word || "");
+      setLevel(initial?.level || "high");
+      setCategory(initial?.category || "Custom");
+      setReason(initial?.reason || "");
+      setFix(initial?.fix || "");
+    }
+  }, [open, initial]);
+
+  return (
+    <Modal open={open} onClose={onClose} title={initial ? "Edit Word" : "Add Restricted Word"} width={520}>
+      <div className="form-grid">
+        <label className="field-label">Word or phrase
+          <input className="text-input" value={word} onChange={(e) => setWord(e.target.value)} placeholder="e.g. bkash number" autoFocus />
+        </label>
+        <label className="field-label">Risk level
+          <select className="select" value={level} onChange={(e) => setLevel(e.target.value)}>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+        <CategoryField id="word-category" value={category} onChange={setCategory} categories={categories} />
+        <label className="field-label">Reason <span className="field-hint">(shown when this word is flagged)</span>
+          <textarea className="text-input textarea-sm" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this risky to send on Fiverr?" />
+        </label>
+        <label className="field-label">Suggested safe rewrite <span className="field-hint">(optional — leave blank to suggest removing it)</span>
+          <input className="text-input" value={fix} onChange={(e) => setFix(e.target.value)} placeholder="e.g. Fiverr's secure checkout" />
+        </label>
+      </div>
+      <div className="modal-actions">
+        <Button tone="ghost" onClick={onClose}>Cancel</Button>
+        <Button
+          tone="primary"
+          icon={Save}
+          disabled={!word.trim() || !reason.trim()}
+          onClick={() => onConfirm({ word: word.trim().toLowerCase(), level, category: category.trim() || "Custom", reason: reason.trim(), fix: fix.trim() })}
+        >
+          {initial ? "Save Changes" : "Add Word"}
+        </Button>
+      </div>
+    </Modal>
+  );
+}
+
+function WordRow({ item, onToggle, onEdit, onDelete }) {
+  const levelColor = item.level === "high" ? "var(--high)" : item.level === "medium" ? "var(--medium)" : "var(--low)";
+  return (
+    <div className={`word-row${item.enabled ? "" : " word-row-disabled"}`}>
+      <button
+        type="button"
+        className="word-toggle"
+        onClick={() => onToggle(item)}
+        title={item.enabled ? "Disable — stop flagging this" : "Enable — start flagging this again"}
+      >
+        {item.enabled ? <ToggleRight size={20} color="var(--accent)" /> : <ToggleLeft size={20} color="var(--muted)" />}
+      </button>
+      <div className="word-row-main">
+        <div className="word-row-top">
+          <span className="word-row-text">{item.word}</span>
+          <span className="issue-badge" style={{ background: levelColor, color: item.level === "medium" ? "#1a1200" : item.level === "low" ? "#04231b" : "#fff" }}>{item.level}</span>
+          <CategoryPill value={item.category} />
+          {item.source === "custom" && <span className="custom-tag">Custom</span>}
+        </div>
+        <p className="word-row-reason">{item.reason}</p>
+        {item.fix && <p className="word-row-fix">Suggested rewrite: &ldquo;{item.fix}&rdquo;</p>}
+      </div>
+      {item.source === "custom" && (
+        <div className="word-row-actions">
+          <IconButton icon={Pencil} label="Edit" onClick={() => onEdit(item)} />
+          <IconButton icon={Trash2} label="Delete" tone="danger" onClick={() => onDelete(item)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RestrictedWordsPage({ disabledBuiltinWords, customWords, categories, onToggleBuiltin, onAddCustom, onUpdateCustom, onToggleCustom, onDeleteCustom }) {
+  const [query, setQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState("All");
+  const [sourceFilter, setSourceFilter] = useState("All");
+  const [modal, setModal] = useState({ open: false, initial: null });
+
+  const disabledSet = new Set(disabledBuiltinWords.map((w) => w.toLowerCase()));
+  const combined = [
+    ...RESTRICTED_WORDS.map((w) => ({ ...w, source: "builtin", enabled: !disabledSet.has(w.word.toLowerCase()) })),
+    ...customWords.map((w) => ({ ...w, source: "custom" })),
+  ];
+
+  const q = query.trim().toLowerCase();
+  const filtered = combined.filter((w) => {
+    const matchesQ = !q || w.word.toLowerCase().includes(q) || w.category.toLowerCase().includes(q);
+    const matchesLevel = levelFilter === "All" || w.level === levelFilter;
+    const matchesSource = sourceFilter === "All" || w.source === sourceFilter;
+    return matchesQ && matchesLevel && matchesSource;
+  }).sort((a, b) => a.word.localeCompare(b.word));
+
+  const activeCount = combined.filter((w) => w.enabled).length;
+  const customCount = customWords.length;
+
+  return (
+    <div className="page-body">
+      <PageHeader
+        title="Restricted Words"
+        subtitle="The words and phrases the scanner checks for — built-in plus your own."
+        onMenu={() => {}}
+        right={<Button tone="primary" icon={PlusCircle} onClick={() => setModal({ open: true, initial: null })}>Add Word</Button>}
+      />
+
+      <div className="stat-grid words-stat-grid">
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-accent"><ListChecks size={18} /></div>
+          <div><span className="stat-value">{combined.length}</span><span className="stat-label">Total words</span></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-low"><ShieldCheck size={18} /></div>
+          <div><span className="stat-value">{activeCount}</span><span className="stat-label">Actively scanned</span></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-medium"><PlusCircle size={18} /></div>
+          <div><span className="stat-value">{customCount}</span><span className="stat-label">Your custom words</span></div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-high"><ShieldOff size={18} /></div>
+          <div><span className="stat-value">{disabledBuiltinWords.length}</span><span className="stat-label">Disabled built-ins</span></div>
+        </div>
+      </div>
+
+      <div className="filter-row">
+        <div className="search-box">
+          <Search size={15} />
+          <input placeholder="Search words or categories..." value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div className="chip-row">
+          {["All", "high", "medium", "low"].map((l) => (
+            <button key={l} className={`chip${levelFilter === l ? " chip-active" : ""}`} onClick={() => setLevelFilter(l)}>{l === "All" ? "All levels" : l}</button>
+          ))}
+        </div>
+        <div className="chip-row">
+          {["All", "builtin", "custom"].map((s) => (
+            <button key={s} className={`chip${sourceFilter === s ? " chip-active" : ""}`} onClick={() => setSourceFilter(s)}>{s === "All" ? "All sources" : s === "builtin" ? "Built-in" : "Custom"}</button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState icon={Search} title="No words match" subtitle="Try a different search term or filter." />
+      ) : (
+        <div className="card">
+          <div className="word-list">
+            {filtered.map((item) => (
+              <WordRow
+                key={`${item.source}-${item.word}-${item.id || ""}`}
+                item={item}
+                onToggle={(w) => w.source === "builtin" ? onToggleBuiltin(w.word) : onToggleCustom(w)}
+                onEdit={(w) => setModal({ open: true, initial: w })}
+                onDelete={onDeleteCustom}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <WordFormModal
+        open={modal.open}
+        initial={modal.initial}
+        categories={categories}
+        onClose={() => setModal({ open: false, initial: null })}
+        onConfirm={(data) => {
+          if (modal.initial) onUpdateCustom(modal.initial.id, data);
+          else onAddCustom(data);
+          setModal({ open: false, initial: null });
+        }}
+      />
+    </div>
+  );
+}
+
+/* ======================================================================
    CATEGORIES PAGE
 ====================================================================== */
-function CategoriesPage({ messages, templates, setPage, setCheckerCategory }) {
+function CategoriesPage({ messages, templates, categories, setPage, setCheckerCategory }) {
   return (
     <div className="page-body">
       <PageHeader title="Categories" subtitle="How your saved messages and templates break down." onMenu={() => {}} />
       <div className="cat-grid">
-        {CATEGORIES.map((c) => {
+        {categories.map((c) => {
           const msgCount = messages.filter((m) => m.category === c).length;
           const tplCount = templates.filter((t) => t.category === c).length;
           return (
@@ -1279,6 +1508,7 @@ function CategoriesPage({ messages, templates, setPage, setCheckerCategory }) {
               <div className="cat-card-head">
                 <Tags size={16} />
                 <span>{c}</span>
+                {!CATEGORIES.includes(c) && <span className="custom-tag">Custom</span>}
               </div>
               <div className="cat-card-stats">
                 <div><span className="cat-num">{msgCount}</span><span className="cat-num-label">Messages</span></div>
@@ -1415,6 +1645,8 @@ export default function App() {
   const [templates, setTemplates] = useState(SEED_TEMPLATES);
   const [activity, setActivity] = useState([]);
   const [settings, setSettings] = useState({ defaultCategory: "General" });
+  const [customWords, setCustomWords] = useState([]);
+  const [disabledBuiltinWords, setDisabledBuiltinWords] = useState([]);
 
   const [text, setText] = useState("");
   const [category, setCategory] = useState("General");
@@ -1461,6 +1693,8 @@ export default function App() {
         if (saved.activity) setActivity(saved.activity);
         if (saved.settings) setSettings(saved.settings);
         if (saved.theme) setTheme(saved.theme);
+        if (saved.customWords) setCustomWords(saved.customWords);
+        if (saved.disabledBuiltinWords) setDisabledBuiltinWords(saved.disabledBuiltinWords);
       }
       setLoaded(true);
     })();
@@ -1469,12 +1703,23 @@ export default function App() {
   /* ---- Persist on change ---- */
   useEffect(() => {
     if (!loaded) return;
-    saveState({ messages, templates, activity, settings, theme });
-  }, [loaded, messages, templates, activity, settings, theme]);
+    saveState({ messages, templates, activity, settings, theme, customWords, disabledBuiltinWords });
+  }, [loaded, messages, templates, activity, settings, theme, customWords, disabledBuiltinWords]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
-  const scan = useMemo(() => scanMessage(text), [text]);
+  /* ---- Combined word list (built-in minus disabled, plus custom) used for every scan ---- */
+  const wordList = useMemo(() => buildWordList(disabledBuiltinWords, customWords), [disabledBuiltinWords, customWords]);
+
+  /* ---- Dynamic category list: the fixed defaults plus any custom category already in use ---- */
+  const allCategories = useMemo(() => {
+    const set = new Set(CATEGORIES);
+    messages.forEach((m) => m.category && set.add(m.category));
+    templates.forEach((t) => t.category && set.add(t.category));
+    return Array.from(set);
+  }, [messages, templates]);
+
+  const scan = useMemo(() => scanMessage(text, wordList), [text, wordList]);
 
   /* ---- Checker actions ---- */
   const startNewCheck = () => {
@@ -1484,7 +1729,7 @@ export default function App() {
 
   const handleSaveMessage = (data) => {
     const now = Date.now();
-    const s = scanMessage(data.content);
+    const s = scanMessage(data.content, wordList);
     const newMsg = {
       id: uid(), title: data.title, category: data.category, content: data.content,
       tags: data.tags, createdAt: now, updatedAt: now, riskStatus: s.status, riskScore: s.score, usageCount: 0,
@@ -1496,7 +1741,7 @@ export default function App() {
   };
 
   const handleEditMessage = (data) => {
-    const s = scanMessage(data.content);
+    const s = scanMessage(data.content, wordList);
     setMessages((list) => list.map((m) => m.id === editMessage.id ? { ...m, ...data, riskStatus: s.status, riskScore: s.score, updatedAt: Date.now() } : m));
     addActivity(`Message updated — "${data.title}"`);
     addToast("Message updated.");
@@ -1609,6 +1854,44 @@ export default function App() {
     onConfirm: () => { setActivity([]); addToast("Activity log cleared.", "danger"); },
   });
 
+  /* ---- Restricted word management ---- */
+  const handleToggleBuiltinWord = (word) => {
+    setDisabledBuiltinWords((list) => {
+      const w = word.toLowerCase();
+      const isDisabled = list.includes(w);
+      addToast(isDisabled ? `"${word}" is being scanned again.` : `"${word}" will no longer be flagged.`);
+      return isDisabled ? list.filter((x) => x !== w) : [...list, w];
+    });
+  };
+
+  const handleAddCustomWord = (data) => {
+    setCustomWords((list) => [{ id: uid(), ...data, enabled: true }, ...list]);
+    addActivity(`Custom word added — "${data.word}"`);
+    addToast("Word added to the scanner.");
+  };
+
+  const handleUpdateCustomWord = (id, data) => {
+    setCustomWords((list) => list.map((w) => w.id === id ? { ...w, ...data } : w));
+    addToast("Word updated.");
+  };
+
+  const handleToggleCustomWord = (w) => {
+    setCustomWords((list) => list.map((x) => x.id === w.id ? { ...x, enabled: !x.enabled } : x));
+    addToast(w.enabled ? `"${w.word}" disabled.` : `"${w.word}" enabled.`);
+  };
+
+  const handleDeleteCustomWord = (w) => {
+    setConfirmDialog({
+      title: "Delete custom word",
+      message: `Remove "${w.word}" from your custom word list? This can't be undone.`,
+      confirmLabel: "Delete word",
+      onConfirm: () => {
+        setCustomWords((list) => list.filter((x) => x.id !== w.id));
+        addToast("Custom word deleted.", "danger");
+      },
+    });
+  };
+
   /* ---- Backup: export / import all data as a JSON file ---- */
   const [lastBackupAt, setLastBackupAt] = useState(null);
 
@@ -1617,7 +1900,7 @@ export default function App() {
       app: "Fiverr Safety Checker",
       version: APP_VERSION,
       exportedAt: new Date().toISOString(),
-      messages, templates, activity, settings, theme,
+      messages, templates, activity, settings, theme, customWords, disabledBuiltinWords,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -1658,6 +1941,8 @@ export default function App() {
           if (Array.isArray(parsed.activity)) setActivity(parsed.activity);
           if (parsed.settings) setSettings(parsed.settings);
           if (parsed.theme) setTheme(parsed.theme);
+          if (Array.isArray(parsed.customWords)) setCustomWords(parsed.customWords);
+          if (Array.isArray(parsed.disabledBuiltinWords)) setDisabledBuiltinWords(parsed.disabledBuiltinWords);
           addActivity("Data restored from backup file");
           addToast("Backup restored successfully.");
         },
@@ -1685,7 +1970,7 @@ export default function App() {
 
         {page === "checker" && (
           <MessageChecker
-            text={text} setText={setText} category={category} setCategory={setCategory}
+            text={text} setText={setText} category={category} setCategory={setCategory} categories={allCategories}
             scan={scan} onSave={() => setSaveModalOpen(true)} onOpenInsert={() => setInsertOpen(true)}
             addToast={addToast} textareaRef={textareaRef}
           />
@@ -1694,6 +1979,7 @@ export default function App() {
         {page === "templates" && (
           <TemplatesPage
             templates={templates}
+            categories={allCategories}
             onUse={handleUseTemplate}
             onCreate={() => setTemplateModal({ open: true, initial: null })}
             onEdit={(t) => setTemplateModal({ open: true, initial: t })}
@@ -1707,6 +1993,7 @@ export default function App() {
         {page === "saved" && (
           <SavedMessages
             messages={messages}
+            categories={allCategories}
             onUse={handleUseMessage}
             onEdit={(m) => setEditMessage(m)}
             onDelete={handleDeleteMessage}
@@ -1715,8 +2002,21 @@ export default function App() {
           />
         )}
 
+        {page === "words" && (
+          <RestrictedWordsPage
+            disabledBuiltinWords={disabledBuiltinWords}
+            customWords={customWords}
+            categories={allCategories}
+            onToggleBuiltin={handleToggleBuiltinWord}
+            onAddCustom={handleAddCustomWord}
+            onUpdateCustom={handleUpdateCustomWord}
+            onToggleCustom={handleToggleCustomWord}
+            onDeleteCustom={handleDeleteCustomWord}
+          />
+        )}
+
         {page === "categories" && (
-          <CategoriesPage messages={messages} templates={templates} setPage={setPage} setCheckerCategory={setCategory} />
+          <CategoriesPage messages={messages} templates={templates} categories={allCategories} setPage={setPage} setCheckerCategory={setCategory} />
         )}
 
         {page === "settings" && (
@@ -1728,14 +2028,16 @@ export default function App() {
         )}
       </main>
 
-      <SaveMessageModal open={saveModalOpen} onClose={() => setSaveModalOpen(false)} defaultContent={text} defaultCategory={category} onConfirm={handleSaveMessage} />
+      <SaveMessageModal open={saveModalOpen} onClose={() => setSaveModalOpen(false)} defaultContent={text} defaultCategory={category} categories={allCategories} onConfirm={handleSaveMessage} />
       <TemplateModal
         open={templateModal.open}
         initial={templateModal.initial}
+        categories={allCategories}
+        wordList={wordList}
         onClose={() => setTemplateModal({ open: false, initial: null })}
         onConfirm={templateModal.initial ? handleUpdateTemplate : handleCreateTemplate}
       />
-      <EditMessageModal open={!!editMessage} message={editMessage} onClose={() => setEditMessage(null)} onConfirm={handleEditMessage} />
+      <EditMessageModal open={!!editMessage} message={editMessage} categories={allCategories} onClose={() => setEditMessage(null)} onConfirm={handleEditMessage} />
       <InsertTemplateModal open={insertOpen} onClose={() => setInsertOpen(false)} templates={templates} onInsert={handleInsertTemplate} />
       <ConfirmDialog config={confirmDialog} onClose={() => setConfirmDialog(null)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} onNavigate={setPage} templates={templates} onUseTemplate={handleUseTemplate} />
@@ -1896,6 +2198,7 @@ const CSS = `
 .checker-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; margin-bottom: 16px; }
 .composer-toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .field-label { font-size: 11px; font-weight: 600; color: var(--text2); display: flex; flex-direction: column; gap: 6px; }
+.field-label-inline { flex-direction: row; align-items: center; gap: 8px; white-space: nowrap; }
 .field-hint { font-weight: 400; color: var(--muted); font-size: 10.5px; }
 .select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
 .select-sm { padding: 7px 9px; }
@@ -2032,6 +2335,21 @@ const CSS = `
 .cat-card-stats { display: flex; gap: 20px; }
 .cat-num { display: block; font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
 .cat-num-label { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.custom-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); background: rgba(79,158,255,0.12); border: 1px solid rgba(79,158,255,0.3); padding: 2px 7px; border-radius: 100px; }
+
+/* RESTRICTED WORDS PAGE */
+.words-stat-grid { margin-bottom: 18px; }
+.word-list { padding: 8px; max-height: 640px; overflow-y: auto; }
+.word-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 10px; border-radius: 9px; border-bottom: 1px solid var(--border); }
+.word-row:last-child { border-bottom: none; }
+.word-row-disabled { opacity: 0.45; }
+.word-toggle { background: none; border: none; cursor: pointer; padding: 2px; flex-shrink: 0; margin-top: 1px; }
+.word-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.word-row-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.word-row-text { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; }
+.word-row-reason { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.word-row-fix { font-size: 11px; color: var(--accent); }
+.word-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
 /* SETTINGS */
 .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 6px 18px; margin-bottom: 16px; }
