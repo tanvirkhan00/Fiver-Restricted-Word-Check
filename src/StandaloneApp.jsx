@@ -8,7 +8,11 @@ import {
   Download, Upload, DatabaseBackup, Ban, ToggleLeft, ToggleRight, PlusCircle, ShieldOff
 } from "lucide-react";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import {
+  getAuth, GoogleAuthProvider, signInAnonymously, signInWithPopup,
+  linkWithPopup, signOut, onAuthStateChanged,
+} from "firebase/auth";
 
 /* ======================================================================
    DATA: restricted-word ruleset (unchanged from the original scanner)
@@ -252,9 +256,20 @@ function uid() {
 }
 
 /* ======================================================================
-   STORAGE HELPERS — Firebase Firestore is the source of truth (cloud,
-   survives code updates, port changes, and works across devices/browsers).
-   localStorage is kept only as a fast local mirror + offline fallback.
+   AUTH + STORAGE HELPERS
+   ----------------------------------------------------------------------
+   Every visitor gets a Firebase Auth uid — either an anonymous uid
+   (assigned silently, no login required) or a Google uid after they
+   sign in. Every user's data lives in its OWN document at
+   users/{uid}, so accounts can never see or overwrite each other's
+   templates / restricted words / messages (enforced server-side by
+   Firestore Security Rules — see firestore.rules).
+
+   Inactivity auto-delete: every save refreshes `expiresAt` to
+   (now + INACTIVITY_DAYS). A Firestore TTL policy on the `expiresAt`
+   field (set up once in the Firebase console, not in code) then wipes
+   the document automatically once it goes stale — whether the user
+   is signed in or just browsing anonymously.
 ====================================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyCoBSic6KIj5gKj5mejhodSrqbnYRs5lqY",
@@ -267,43 +282,91 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const db = getFirestore(firebaseApp);
-const STATE_DOC = doc(db, "appState", "main");
+const auth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
 
-const STORE_KEY = "fiverr-safety-checker:state";
+const INACTIVITY_DAYS = 30;
 
-async function loadState() {
-  // Try the cloud first — this is what makes data survive code updates / port changes.
+function userDoc(uid) {
+  return doc(db, "users", uid);
+}
+
+function storeKeyFor(uid) {
+  // Per-uid local cache so switching accounts on the same device never
+  // shows a flash of the previous user's data.
+  return `fiverr-safety-checker:state:${uid}`;
+}
+
+async function loadState(uid) {
+  if (!uid) return null;
   try {
-    const snap = await getDoc(STATE_DOC);
+    const snap = await getDoc(userDoc(uid));
     if (snap.exists() && snap.data()?.json) {
       const parsed = JSON.parse(snap.data().json);
-      try { window.localStorage.setItem(STORE_KEY, snap.data().json); } catch {}
+      try { window.localStorage.setItem(storeKeyFor(uid), snap.data().json); } catch {}
       return parsed;
     }
   } catch (e) {
     console.error("Firestore load failed, falling back to local cache:", e);
   }
-  // Fall back to the local mirror (e.g. offline, or first load before Firestore responds).
   try {
-    const raw = window.localStorage.getItem(STORE_KEY);
+    const raw = window.localStorage.getItem(storeKeyFor(uid));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-async function saveState(state) {
+async function saveState(uid, state) {
+  if (!uid) return;
   const json = JSON.stringify(state);
   try {
-    window.localStorage.setItem(STORE_KEY, json);
+    window.localStorage.setItem(storeKeyFor(uid), json);
   } catch (e) {
     console.error("Local cache save error:", e);
   }
   try {
-    await setDoc(STATE_DOC, { json, updatedAt: Date.now() });
+    const expiresAt = Timestamp.fromMillis(Date.now() + INACTIVITY_DAYS * 24 * 60 * 60 * 1000);
+    await setDoc(userDoc(uid), { json, updatedAt: serverTimestamp(), expiresAt }, { merge: true });
   } catch (e) {
     console.error("Firestore save error (data is still safe in the local cache):", e);
   }
+}
+
+/* ---- Auth helpers --------------------------------------------------- */
+async function ensureSignedIn() {
+  // Called once on boot. If nobody is signed in yet, create a silent
+  // anonymous session so every visitor — logged in or not — has an
+  // isolated uid and an inactivity clock from their very first visit.
+  if (!auth.currentUser) {
+    await signInAnonymously(auth);
+  }
+}
+
+async function signInWithGoogle() {
+  // If the current session is anonymous, LINK it to the Google account
+  // so any templates/words they already made stay attached to them.
+  if (auth.currentUser?.isAnonymous) {
+    try {
+      const result = await linkWithPopup(auth.currentUser, googleProvider);
+      return { user: result.user, merged: false };
+    } catch (e) {
+      if (e.code === "auth/credential-already-in-use") {
+        // That Google account already has its own saved data elsewhere —
+        // sign into the existing account instead of losing it.
+        const result = await signInWithPopup(auth, googleProvider);
+        return { user: result.user, merged: true };
+      }
+      throw e;
+    }
+  }
+  const result = await signInWithPopup(auth, googleProvider);
+  return { user: result.user, merged: false };
+}
+
+async function signOutToAnonymous() {
+  await signOut(auth);
+  await signInAnonymously(auth);
 }
 
 /* ======================================================================
@@ -521,7 +584,10 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
-function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggleTheme, onOpenPalette }) {
+function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggleTheme, onOpenPalette, user, onSignIn, onSignOut }) {
+  const isGuest = !user || user.isAnonymous;
+  const initials = (user?.displayName || "Guest")
+    .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   return (
     <>
       {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} />}
@@ -561,15 +627,26 @@ function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggleTheme,
             <span>{theme === "dark" ? "Dark mode" : "Light mode"}</span>
           </button>
           <div className="profile-row">
-            <div className="avatar">TK</div>
+            {user?.photoURL
+              ? <img className="avatar avatar-img" src={user.photoURL} alt="" referrerPolicy="no-referrer" />
+              : <div className="avatar">{isGuest ? "?" : initials}</div>}
             <div className="profile-meta">
-              <span className="profile-name">Tanvir Khan</span>
-              <span className="profile-role">Freelancer</span>
+              <span className="profile-name">{isGuest ? "Guest" : (user.displayName || user.email)}</span>
+              <span className="profile-role">{isGuest ? "Not signed in — data local to this device" : "Signed in with Google"}</span>
             </div>
             <button className="icon-btn icon-btn-ghost" onClick={() => setPage("settings")} aria-label="Settings">
               <SettingsIcon size={15} />
             </button>
           </div>
+          {isGuest ? (
+            <button className="btn btn-secondary btn-full sidebar-auth-btn" onClick={onSignIn}>
+              <span>Sign in with Google</span>
+            </button>
+          ) : (
+            <button className="btn btn-ghost btn-full sidebar-auth-btn" onClick={onSignOut}>
+              <span>Sign out</span>
+            </button>
+          )}
         </div>
       </aside>
     </>
@@ -1672,6 +1749,8 @@ function SettingsPage({ theme, toggleTheme, settings, setSettings, onClearMessag
    ROOT APP
 ====================================================================== */
 export default function App() {
+  const [authReady, setAuthReady] = useState(false);
+  const [user, setUser] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [theme, setTheme] = useState("dark");
   const [page, setPage] = useState("dashboard");
@@ -1719,28 +1798,67 @@ export default function App() {
     setActivity((a) => [{ id: uid(), label, timestamp: Date.now() }, ...a].slice(0, 30));
   }, []);
 
-  /* ---- Load persisted state once ---- */
+  /* ---- Auth: silently sign in anonymously if nobody is logged in, then
+     track whoever ends up signed in (anonymous or Google) ---- */
   useEffect(() => {
-    (async () => {
-      const saved = await loadState();
-      if (saved) {
-        if (saved.messages) setMessages(saved.messages);
-        if (saved.templates) setTemplates(saved.templates);
-        if (saved.activity) setActivity(saved.activity);
-        if (saved.settings) setSettings(saved.settings);
-        if (saved.theme) setTheme(saved.theme);
-        if (saved.customWords) setCustomWords(saved.customWords);
-        if (saved.disabledBuiltinWords) setDisabledBuiltinWords(saved.disabledBuiltinWords);
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      if (!u) {
+        await ensureSignedIn();
+        return; // onAuthStateChanged will fire again with the anon user
       }
-      setLoaded(true);
-    })();
+      setUser(u);
+      setAuthReady(true);
+    });
+    ensureSignedIn();
+    return unsub;
   }, []);
 
-  /* ---- Persist on change ---- */
+  /* ---- Load this uid's data whenever the signed-in user changes
+     (first load, Google sign-in, or sign-out back to a fresh anon uid) ---- */
   useEffect(() => {
-    if (!loaded) return;
-    saveState({ messages, templates, activity, settings, theme, customWords, disabledBuiltinWords });
-  }, [loaded, messages, templates, activity, settings, theme, customWords, disabledBuiltinWords]);
+    if (!authReady || !user) return;
+    setLoaded(false);
+    (async () => {
+      const saved = await loadState(user.uid);
+      // Reset to defaults first so switching accounts never leaks the
+      // previous user's templates/words into the new session.
+      setMessages(saved?.messages || []);
+      setTemplates(saved?.templates || SEED_TEMPLATES);
+      setActivity(saved?.activity || []);
+      setSettings(saved?.settings || { defaultCategory: "General" });
+      if (saved?.theme) setTheme(saved.theme);
+      setCustomWords(saved?.customWords || []);
+      setDisabledBuiltinWords(saved?.disabledBuiltinWords || []);
+      setLoaded(true);
+    })();
+  }, [authReady, user?.uid]);
+
+  /* ---- Persist on change, scoped to the current uid ---- */
+  useEffect(() => {
+    if (!loaded || !user) return;
+    saveState(user.uid, { messages, templates, activity, settings, theme, customWords, disabledBuiltinWords });
+  }, [loaded, user, messages, templates, activity, settings, theme, customWords, disabledBuiltinWords]);
+
+  /* ---- Account actions (Google sign-in / sign-out) ---- */
+  const handleSignIn = useCallback(async () => {
+    try {
+      const { merged } = await signInWithGoogle();
+      addToast(merged ? "Signed in — loaded your existing account" : "Signed in with Google");
+    } catch (e) {
+      console.error("Google sign-in failed:", e);
+      addToast("Sign-in failed, try again", "danger");
+    }
+  }, [addToast]);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOutToAnonymous();
+      addToast("Signed out");
+    } catch (e) {
+      console.error("Sign-out failed:", e);
+      addToast("Sign-out failed, try again", "danger");
+    }
+  }, [addToast]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
@@ -1988,11 +2106,27 @@ export default function App() {
     reader.readAsText(file);
   };
 
+  if (!authReady || !loaded) {
+    return (
+      <div className={`app-root theme-${theme}`} data-theme={theme}>
+        <style>{CSS}</style>
+        <div className="auth-loading">
+          <Shield size={22} />
+          <span>Loading your account…</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`app-root theme-${theme}`} data-theme={theme}>
       <style>{CSS}</style>
 
-      <Sidebar page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} theme={theme} toggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)} />
+      <Sidebar
+        page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}
+        theme={theme} toggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)}
+        user={user} onSignIn={handleSignIn} onSignOut={handleSignOut}
+      />
 
       <main className="main-area">
         <div className="mobile-topbar">
@@ -2130,7 +2264,11 @@ const CSS = `
 .theme-toggle-inline { width: fit-content; }
 .profile-row { display: flex; align-items: center; gap: 9px; }
 .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+.avatar-img { object-fit: cover; }
 .profile-meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-auth-btn { margin-top: 10px; }
+.auth-loading { display: flex; align-items: center; justify-content: center; gap: 8px; height: 100vh; color: var(--text2); font-size: 13px; }
 .profile-name { font-size: 12px; font-weight: 600; }
 .profile-role { font-size: 10.5px; color: var(--muted); }
 
