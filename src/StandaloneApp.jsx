@@ -7,6 +7,8 @@ import {
   ListChecks, Save, ClipboardList, ChevronRight, Star, Command, TrendingUp, Wand2,
   Download, Upload, DatabaseBackup, Ban, ToggleLeft, ToggleRight, PlusCircle, ShieldOff
 } from "lucide-react";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 
 /* ======================================================================
    DATA: restricted-word ruleset (unchanged from the original scanner)
@@ -250,23 +252,57 @@ function uid() {
 }
 
 /* ======================================================================
-   STORAGE HELPERS (persistent artifact key-value storage)
+   STORAGE HELPERS — Firebase Firestore is the source of truth (cloud,
+   survives code updates, port changes, and works across devices/browsers).
+   localStorage is kept only as a fast local mirror + offline fallback.
 ====================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCoBSic6KIj5gKj5mejhodSrqbnYRs5lqY",
+  authDomain: "fiverr-safety-checker.firebaseapp.com",
+  projectId: "fiverr-safety-checker",
+  storageBucket: "fiverr-safety-checker.firebasestorage.app",
+  messagingSenderId: "283773583275",
+  appId: "1:283773583275:web:3f0636024eb66020a99cee",
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const STATE_DOC = doc(db, "appState", "main");
+
 const STORE_KEY = "fiverr-safety-checker:state";
 
 async function loadState() {
+  // Try the cloud first — this is what makes data survive code updates / port changes.
   try {
-    const res = await window.storage.get(STORE_KEY, false);
-    return res ? JSON.parse(res.value) : null;
+    const snap = await getDoc(STATE_DOC);
+    if (snap.exists() && snap.data()?.json) {
+      const parsed = JSON.parse(snap.data().json);
+      try { window.localStorage.setItem(STORE_KEY, snap.data().json); } catch {}
+      return parsed;
+    }
+  } catch (e) {
+    console.error("Firestore load failed, falling back to local cache:", e);
+  }
+  // Fall back to the local mirror (e.g. offline, or first load before Firestore responds).
+  try {
+    const raw = window.localStorage.getItem(STORE_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
+
 async function saveState(state) {
+  const json = JSON.stringify(state);
   try {
-    await window.storage.set(STORE_KEY, JSON.stringify(state), false);
+    window.localStorage.setItem(STORE_KEY, json);
   } catch (e) {
-    console.error("Storage error:", e);
+    console.error("Local cache save error:", e);
+  }
+  try {
+    await setDoc(STATE_DOC, { json, updatedAt: Date.now() });
+  } catch (e) {
+    console.error("Firestore save error (data is still safe in the local cache):", e);
   }
 }
 
@@ -2416,4 +2452,20 @@ const CSS = `
   .stat-grid { grid-template-columns: 1fr; }
   .status-body { flex-direction: column; text-align: center; }
 }
+html, body, #root { height: 100%; }
+body { margin: 0; }
 `;
+
+/* ======================================================================
+   MOUNT — this is the part a Claude.ai artifact does for you automatically.
+   In a normal Vite/CRA project, index.html needs a <div id="root"></div>
+   and this file needs to actually render into it.
+====================================================================== */
+import ReactDOM from "react-dom/client";
+
+const rootEl = document.getElementById("root");
+if (rootEl) {
+  ReactDOM.createRoot(rootEl).render(<App />);
+} else {
+  console.error('No <div id="root"></div> found in index.html — the app has nothing to mount into.');
+}
