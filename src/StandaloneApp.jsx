@@ -772,7 +772,7 @@ function MessageChecker({
 
       <div className="checker-grid">
         {/* LEFT: composer */}
-        <div className="card">
+        <div className="card composer-card">
           <div className="card-head">
             <span className="card-label">Message Composer</span>
             <span className="char-meta">{text.length} chars</span>
@@ -2195,7 +2195,8 @@ const CSS = `
 .badge-muted { color: var(--text2); }
 
 /* CHECKER GRID */
-.checker-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; margin-bottom: 16px; }
+.checker-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: stretch; margin-bottom: 16px; }
+.composer-card { display: flex; flex-direction: column; }
 .composer-toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .field-label { font-size: 11px; font-weight: 600; color: var(--text2); display: flex; flex-direction: column; gap: 6px; }
 .field-label-inline { flex-direction: row; align-items: center; gap: 8px; white-space: nowrap; }
@@ -2203,12 +2204,14 @@ const CSS = `
 .select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 7px; padding: 7px 10px; font-size: 12.5px; font-family: inherit; }
 .select-sm { padding: 7px 9px; }
 .insert-link { margin-left: auto; }
-.composer-textarea { width: 100%; min-height: 260px; padding: 16px; background: transparent; border: none; outline: none; resize: vertical; font-size: 14px; font-family: 'Space Grotesk', sans-serif; color: var(--text); line-height: 1.7; }
+.composer-textarea { flex: 1; width: 100%; min-height: 220px; padding: 16px; background: transparent; border: none; outline: none; resize: none; font-size: 14px; font-family: 'Space Grotesk', sans-serif; color: var(--text); line-height: 1.7; }
 .composer-textarea::placeholder { color: var(--muted); }
 .composer-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px 14px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
 .composer-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-.analysis-col { display: flex; flex-direction: column; gap: 16px; }
+.analysis-col { display: flex; flex-direction: column; gap: 16px; height: 100%; }
+.issues-card { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.issues-body { flex: 1; padding: 10px; min-height: 140px; max-height: none; overflow-y: auto; }
 .status-body { display: flex; align-items: center; gap: 16px; padding: 16px; }
 .gauge { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
 .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -2226,7 +2229,6 @@ const CSS = `
 .risk-pill.high { color: var(--high); } .risk-pill.med { color: var(--medium); } .risk-pill.low { color: var(--low); }
 .risk-pill.high.active { background: var(--high-bg); } .risk-pill.med.active { background: var(--medium-bg); } .risk-pill.low.active { background: var(--low-bg); }
 
-.issues-body { padding: 10px; max-height: 320px; overflow-y: auto; }
 .issue-card { padding: 11px 12px; border-radius: 9px; margin-bottom: 7px; border: 1px solid transparent; }
 .issue-high { background: var(--high-bg); border-color: var(--high-border); }
 .issue-medium { background: var(--medium-bg); border-color: var(--medium-border); }
