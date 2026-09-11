@@ -11,6 +11,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import {
   getAuth, GoogleAuthProvider, signInAnonymously,
+  signInWithPopup, linkWithPopup,
   signInWithRedirect, linkWithRedirect, getRedirectResult,
   signOut, onAuthStateChanged,
 } from "firebase/auth";
@@ -348,29 +349,57 @@ async function ensureSignedIn() {
   }
 }
 
-function signInWithGoogle() {
-  // Redirect-based sign-in instead of a popup. signInWithPopup/linkWithPopup
-  // break on hosts that send a `Cross-Origin-Opener-Policy: same-origin`
-  // header (common on modern static hosts): the popup can't message back to
-  // the opener or close itself, which surfaces as the
-  // "auth/popup-blocked" error on the very next attempt. Redirect doesn't
-  // depend on popups or COOP at all, so it works everywhere.
+async function signInWithGoogle() {
+  // Popup first, redirect as a fallback.
   //
-  // This function kicks off the redirect (the page will navigate away);
-  // the result is picked up by consumeRedirectResult() below after Firebase
-  // sends the user back.
-  if (auth.currentUser?.isAnonymous) {
-    // Anonymous session -> LINK it to the Google account so any
-    // templates/words already made stay attached to this user.
-    return linkWithRedirect(auth.currentUser, googleProvider);
+  // Popup is tried first because it doesn't send the browser through a
+  // full top-level navigation to the authDomain and back. Chrome's "bounce
+  // tracking" protection treats that kind of unattended cross-domain
+  // round trip as suspicious and can wipe the authDomain's storage before
+  // the sign-in completes, which is what was silently breaking the
+  // redirect-only flow (page appeared to just "refresh" with no Google
+  // screen and no error). A popup keeps the user directly interacting
+  // with the Google account picker, so it isn't flagged the same way.
+  //
+  // Redirect is kept as a fallback for the (rarer) case where the browser
+  // itself won't allow a popup — its result is picked up by
+  // consumeRedirectResult() below after the user is sent back.
+  try {
+    if (auth.currentUser?.isAnonymous) {
+      // Anonymous session -> LINK it to the Google account so any
+      // templates/words already made stay attached to this user.
+      const result = await linkWithPopup(auth.currentUser, googleProvider);
+      return { user: result.user, merged: false };
+    }
+    const result = await signInWithPopup(auth, googleProvider);
+    return { user: result.user, merged: false };
+  } catch (e) {
+    if (e.code === "auth/credential-already-in-use") {
+      // That Google account already has its own saved data elsewhere —
+      // sign into the existing account instead of losing it.
+      const result = await signInWithPopup(auth, googleProvider);
+      return { user: result.user, merged: true };
+    }
+    if (
+      e.code === "auth/popup-blocked" ||
+      e.code === "auth/cancelled-popup-request" ||
+      e.code === "auth/operation-not-supported-in-this-environment"
+    ) {
+      if (auth.currentUser?.isAnonymous) {
+        await linkWithRedirect(auth.currentUser, googleProvider);
+      } else {
+        await signInWithRedirect(auth, googleProvider);
+      }
+      return null; // page is navigating away; result arrives via consumeRedirectResult()
+    }
+    throw e;
   }
-  return signInWithRedirect(auth, googleProvider);
 }
 
 async function consumeRedirectResult() {
-  // Call once on boot to finish a signInWithGoogle() redirect, if the user
-  // is arriving back from one. Returns null when there was no pending
-  // redirect to resolve.
+  // Call once on boot to finish a signInWithGoogle() redirect fallback, if
+  // the user is arriving back from one. Returns null when there was no
+  // pending redirect to resolve.
   try {
     const result = await getRedirectResult(auth);
     if (result?.user) return { user: result.user, merged: false };
@@ -1884,12 +1913,15 @@ export default function App() {
   }, [loaded, user, messages, templates, activity, settings, theme, customWords, disabledBuiltinWords]);
 
   /* ---- Account actions (Google sign-in / sign-out) ----
-     handleSignIn kicks off a redirect — the page navigates to Google and
-     back, so there's no result to await here. The outcome (success/merge/
-     failure) is reported by the boot effect above via consumeRedirectResult(). */
+     handleSignIn tries a popup first, which resolves right here with a
+     result. If the browser forces a redirect fallback instead, this
+     resolves with null (the page is about to navigate away) and the
+     outcome is reported later by the boot effect above via
+     consumeRedirectResult(). */
   const handleSignIn = useCallback(async () => {
     try {
-      await signInWithGoogle();
+      const res = await signInWithGoogle();
+      if (res) addToast(res.merged ? "Signed in — loaded your existing account" : "Signed in with Google");
     } catch (e) {
       console.error("Google sign-in failed:", e);
       addToast("Sign-in failed, try again", "danger");
