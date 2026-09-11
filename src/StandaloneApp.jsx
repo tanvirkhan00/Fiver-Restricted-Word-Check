@@ -10,8 +10,9 @@ import {
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import {
-  getAuth, GoogleAuthProvider, signInAnonymously, signInWithPopup,
-  linkWithPopup, signOut, onAuthStateChanged,
+  getAuth, GoogleAuthProvider, signInAnonymously,
+  signInWithRedirect, linkWithRedirect, getRedirectResult,
+  signOut, onAuthStateChanged,
 } from "firebase/auth";
 
 /* ======================================================================
@@ -335,33 +336,54 @@ async function saveState(uid, state) {
 
 /* ---- Auth helpers --------------------------------------------------- */
 async function ensureSignedIn() {
-  // Called once on boot. If nobody is signed in yet, create a silent
-  // anonymous session so every visitor — logged in or not — has an
-  // isolated uid and an inactivity clock from their very first visit.
+  // Called only from inside the onAuthStateChanged listener below, and only
+  // once Firebase has told us "nobody is signed in" (u === null). Calling
+  // this eagerly on mount (outside the listener) is what used to cause the
+  // "login disappears on refresh" bug: on page load auth.currentUser is
+  // briefly null WHILE Firebase is still restoring a persisted Google
+  // session from IndexedDB, so an eager call here would create a brand new
+  // anonymous user and stomp on the session that was about to be restored.
   if (!auth.currentUser) {
     await signInAnonymously(auth);
   }
 }
 
-async function signInWithGoogle() {
-  // If the current session is anonymous, LINK it to the Google account
-  // so any templates/words they already made stay attached to them.
+function signInWithGoogle() {
+  // Redirect-based sign-in instead of a popup. signInWithPopup/linkWithPopup
+  // break on hosts that send a `Cross-Origin-Opener-Policy: same-origin`
+  // header (common on modern static hosts): the popup can't message back to
+  // the opener or close itself, which surfaces as the
+  // "auth/popup-blocked" error on the very next attempt. Redirect doesn't
+  // depend on popups or COOP at all, so it works everywhere.
+  //
+  // This function kicks off the redirect (the page will navigate away);
+  // the result is picked up by consumeRedirectResult() below after Firebase
+  // sends the user back.
   if (auth.currentUser?.isAnonymous) {
-    try {
-      const result = await linkWithPopup(auth.currentUser, googleProvider);
-      return { user: result.user, merged: false };
-    } catch (e) {
-      if (e.code === "auth/credential-already-in-use") {
-        // That Google account already has its own saved data elsewhere —
-        // sign into the existing account instead of losing it.
-        const result = await signInWithPopup(auth, googleProvider);
-        return { user: result.user, merged: true };
-      }
-      throw e;
-    }
+    // Anonymous session -> LINK it to the Google account so any
+    // templates/words already made stay attached to this user.
+    return linkWithRedirect(auth.currentUser, googleProvider);
   }
-  const result = await signInWithPopup(auth, googleProvider);
-  return { user: result.user, merged: false };
+  return signInWithRedirect(auth, googleProvider);
+}
+
+async function consumeRedirectResult() {
+  // Call once on boot to finish a signInWithGoogle() redirect, if the user
+  // is arriving back from one. Returns null when there was no pending
+  // redirect to resolve.
+  try {
+    const result = await getRedirectResult(auth);
+    if (result?.user) return { user: result.user, merged: false };
+    return null;
+  } catch (e) {
+    if (e.code === "auth/credential-already-in-use") {
+      // The Google account being linked already has its own saved data
+      // elsewhere — sign into that existing account instead of losing it.
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    }
+    throw e;
+  }
 }
 
 async function signOutToAnonymous() {
@@ -1799,19 +1821,41 @@ export default function App() {
   }, []);
 
   /* ---- Auth: silently sign in anonymously if nobody is logged in, then
-     track whoever ends up signed in (anonymous or Google) ---- */
+     track whoever ends up signed in (anonymous or Google).
+
+     IMPORTANT: ensureSignedIn() is only ever called from inside this
+     listener, when Firebase explicitly reports "nobody is signed in"
+     (u === null) — never eagerly on mount. Calling it eagerly races with
+     Firebase restoring a persisted session on page load and was the cause
+     of Google logins getting silently replaced by a fresh anonymous
+     session on refresh. ---- */
   useEffect(() => {
+    let cancelled = false;
     const unsub = onAuthStateChanged(auth, async (u) => {
+      if (cancelled) return;
       if (!u) {
         await ensureSignedIn();
-        return; // onAuthStateChanged will fire again with the anon user
+        return; // onAuthStateChanged will fire again with the anon/restored user
       }
       setUser(u);
       setAuthReady(true);
     });
-    ensureSignedIn();
-    return unsub;
-  }, []);
+
+    // Finish a signInWithGoogle() redirect, if we're arriving back from one.
+    // The listener above handles the resulting auth state change on its own;
+    // this just surfaces a toast once we know how it went.
+    consumeRedirectResult()
+      .then((res) => {
+        if (cancelled || !res) return;
+        addToast(res.merged ? "Signed in — loaded your existing account" : "Signed in with Google");
+      })
+      .catch((e) => {
+        console.error("Google sign-in failed:", e);
+        if (!cancelled) addToast("Sign-in failed, try again", "danger");
+      });
+
+    return () => { cancelled = true; unsub(); };
+  }, [addToast]);
 
   /* ---- Load this uid's data whenever the signed-in user changes
      (first load, Google sign-in, or sign-out back to a fresh anon uid) ---- */
@@ -1839,11 +1883,13 @@ export default function App() {
     saveState(user.uid, { messages, templates, activity, settings, theme, customWords, disabledBuiltinWords });
   }, [loaded, user, messages, templates, activity, settings, theme, customWords, disabledBuiltinWords]);
 
-  /* ---- Account actions (Google sign-in / sign-out) ---- */
+  /* ---- Account actions (Google sign-in / sign-out) ----
+     handleSignIn kicks off a redirect — the page navigates to Google and
+     back, so there's no result to await here. The outcome (success/merge/
+     failure) is reported by the boot effect above via consumeRedirectResult(). */
   const handleSignIn = useCallback(async () => {
     try {
-      const { merged } = await signInWithGoogle();
-      addToast(merged ? "Signed in — loaded your existing account" : "Signed in with Google");
+      await signInWithGoogle();
     } catch (e) {
       console.error("Google sign-in failed:", e);
       addToast("Sign-in failed, try again", "danger");
@@ -2268,7 +2314,7 @@ const CSS = `
 .profile-meta { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar-auth-btn { margin-top: 10px; }
-.auth-loading { display: flex; align-items: center; justify-content: center; gap: 8px; height: 100vh; color: var(--text2); font-size: 13px; }
+.auth-loading { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 100vh; color: var(--text2); font-size: 13px; }
 .profile-name { font-size: 12px; font-weight: 600; }
 .profile-role { font-size: 10.5px; color: var(--muted); }
 
