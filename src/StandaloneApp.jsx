@@ -49,15 +49,33 @@ export default function App() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-    /* ---- Hide the static HTML preloader once the real app data is ready ---- */
+  /* ---- Hide the static HTML preloader once the real app data is ready.
+  If the user is signed in with Google, flash a personalized welcome
+  message first before fading out. ---- */
   useEffect(() => {
     if (!authReady || !loaded) return;
     const preloader = document.getElementById("preloader");
-    if (preloader) {
+    if (!preloader) return;
+
+    const isSignedIn = user && !user.isAnonymous && user.displayName;
+
+    const fadeOutPreloader = () => {
       preloader.classList.add("fade-out");
-      setTimeout(() => preloader.remove(), 900);
+      setTimeout(() => preloader.remove(), 500);
+    };
+
+    if (isSignedIn) {
+      const welcomeEl = document.getElementById("pl-welcome");
+      if (welcomeEl) {
+        const firstName = user.displayName.split(" ")[0];
+        welcomeEl.textContent = `Welcome back, ${firstName}`;
+        welcomeEl.classList.add("show");
+      }
+      setTimeout(fadeOutPreloader, 900);
+    } else {
+      fadeOutPreloader();
     }
-  }, [authReady, loaded]);
+  }, [authReady, loaded, user]);
 
   /* ---- Global Ctrl/Cmd+K shortcut for the command palette ---- */
   useEffect(() => {
