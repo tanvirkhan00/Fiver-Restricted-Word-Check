@@ -52,13 +52,12 @@ export default function App() {
   /* ---- Hide the static HTML preloader once the real app data is ready.
   If the user is signed in with Google, flash a personalized welcome
   message first before fading out. ---- */
-    useEffect(() => {
+  useEffect(() => {
     if (!authReady || !loaded) return;
     const preloader = document.getElementById("preloader");
-    console.log("[preloader-debug]", { authReady, loaded, preloaderFound: !!preloader, user, isAnonymous: user?.isAnonymous, displayName: user?.displayName });
     if (!preloader) return;
 
-    const isSignedIn = user && !user.isAnonymous && user.displayName;
+    const isSignedIn = user && !user.isAnonymous && (user.displayName || user.email);
 
     const fadeOutPreloader = () => {
       preloader.classList.add("fade-out");
@@ -67,10 +66,11 @@ export default function App() {
 
     if (isSignedIn) {
       const welcomeEl = document.getElementById("pl-welcome");
-      console.log("[preloader-debug] welcomeEl found:", !!welcomeEl);
       if (welcomeEl) {
-        const firstName = user.displayName.split(" ")[0];
-        welcomeEl.textContent = `Welcome back, ${firstName}`;
+        const name = user.displayName
+          ? user.displayName.split(" ")[0]
+          : user.email.split("@")[0];
+        welcomeEl.textContent = `Welcome back, ${name}`;
         welcomeEl.classList.add("show");
       }
       setTimeout(fadeOutPreloader, 900);
@@ -78,6 +78,7 @@ export default function App() {
       fadeOutPreloader();
     }
   }, [authReady, loaded, user]);
+
 
   /* ---- Global Ctrl/Cmd+K shortcut for the command palette ---- */
   useEffect(() => {
