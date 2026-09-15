@@ -49,34 +49,45 @@ export default function App() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  /* ---- Hide the static HTML preloader once the real app data is ready.
-  If the user is signed in with Google, flash a personalized welcome
-  message first before fading out. ---- */
+   /* ---- Hide the static HTML preloader once the real app data is ready.
+     If the user is signed in with Google, flash a personalized welcome
+     message (with avatar) first before fading out. ---- */
   useEffect(() => {
-    if (!authReady || !loaded) return;
-    const preloader = document.getElementById("preloader");
-    if (!preloader) return;
+  if (!authReady || !loaded) return;
+  const preloader = document.getElementById("preloader");
+  if (!preloader) return;
 
-    const isSignedIn = user && !user.isAnonymous && (user.displayName || user.email);
+  // Firebase's top-level displayName/photoURL can be null on accounts that
+  // started anonymous and were later linked to Google — fall back to the
+  // linked provider's own profile data, which usually still has it.
+  const providerInfo = user?.providerData?.[0] || {};
+  const displayName = user?.displayName || providerInfo.displayName;
+  const photoURL = user?.photoURL || providerInfo.photoURL;
 
-    const fadeOutPreloader = () => {
-      preloader.classList.add("fade-out");
-      setTimeout(() => preloader.remove(), 500);
-    };
+  const isSignedIn = user && !user.isAnonymous && (displayName || user.email);
 
-    if (isSignedIn) {
-      const welcomeEl = document.getElementById("pl-welcome");
-      if (welcomeEl) {
-        const name = user.displayName
-          ? user.displayName.split(" ")[0]
-          : user.email.split("@")[0];
-        welcomeEl.textContent = `Welcome back, ${name}`;
-        welcomeEl.classList.add("show");
-      }
-      setTimeout(fadeOutPreloader, 900);
-    } else {
-      fadeOutPreloader();
-    }
+  const fadeOutPreloader = () => {
+  preloader.classList.add("fade-out");
+  setTimeout(() => preloader.remove(), 500);
+  };
+
+  if (isSignedIn) {
+  const welcomeEl = document.getElementById("pl-welcome");
+  const avatarEl = document.getElementById("pl-avatar");
+  const name = displayName ? displayName.split(" ")[0] : user.email.split("@")[0];
+
+  if (welcomeEl) {
+  welcomeEl.textContent = `Welcome back, ${name}`;
+  welcomeEl.classList.add("show");
+  }
+  if (avatarEl && photoURL) {
+  avatarEl.src = photoURL;
+  avatarEl.classList.add("show");
+  }
+  setTimeout(fadeOutPreloader, 900);
+  } else {
+  fadeOutPreloader();
+  }
   }, [authReady, loaded, user]);
 
 
