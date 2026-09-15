@@ -49,6 +49,16 @@ export default function App() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
+    /* ---- Hide the static HTML preloader once the real app data is ready ---- */
+  useEffect(() => {
+    if (!authReady || !loaded) return;
+    const preloader = document.getElementById("preloader");
+    if (preloader) {
+      preloader.classList.add("fade-out");
+      setTimeout(() => preloader.remove(), 900);
+    }
+  }, [authReady, loaded]);
+
   /* ---- Global Ctrl/Cmd+K shortcut for the command palette ---- */
   useEffect(() => {
     const handler = (e) => {
