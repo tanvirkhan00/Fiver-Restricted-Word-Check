@@ -26,6 +26,48 @@ export function scanMessage(text, wordList = RESTRICTED_WORDS) {
   return { found, highCount, medCount, lowCount, score, status };
 }
 
+/**
+ * Inserts a hyphen (-) in the middle of a single token or each word of a multi-word phrase
+ * so Fiverr's automated word filter does not flag it while keeping it human-readable.
+ * Example: "payment" -> "pay-ment", "email" -> "em-ail", "video call" -> "vi-deo ca-ll"
+ */
+export function hyphenateSingleToken(token) {
+  if (!token || token.includes("-")) return token;
+  // Handle leading dot or protocol tokens like ".com" or "http://"
+  if (token.startsWith(".") && token.length >= 3) {
+    const body = token.slice(1);
+    const mid = body.length === 3 ? 2 : Math.max(1, Math.floor(body.length / 2));
+    return `.${body.slice(0, mid)}-${body.slice(mid)}`;
+  }
+  if (token.length < 2) return token;
+  const mid = token.length === 3 ? 2 : Math.max(1, Math.floor(token.length / 2));
+  return `${token.slice(0, mid)}-${token.slice(mid)}`;
+}
+
+export function hyphenatePhrase(phrase) {
+  if (!phrase) return "";
+  return phrase
+    .split(/(\s+)/)
+    .map((part) => (/^\s+$/.test(part) ? part : hyphenateSingleToken(part)))
+    .join("");
+}
+
+export function applyHyphen(text, item) {
+  const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+  return text.replace(regex, (matched) => hyphenatePhrase(matched));
+}
+
+export function applyAllHyphens(text, found) {
+  let next = text;
+  [...found]
+    .sort((a, b) => b.word.length - a.word.length)
+    .forEach((item) => {
+      next = applyHyphen(next, item);
+    });
+  return next;
+}
+
 export function applyFix(text, item) {
   const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`\\b${escaped}\\b`, "gi");
@@ -65,9 +107,10 @@ export function buildHighlightHtml(text, found) {
     const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`\\b(${escaped})\\b`, "gi");
     const levelClass = item.level === "high" ? "h-high" : item.level === "medium" ? "h-medium" : "h-low";
+    const hyphenPreview = hyphenatePhrase(item.word);
     html = html.replace(
       regex,
-      `<span class="tooltip-wrap"><span class="${levelClass}">$1</span><span class="tooltip"><span class="tt-header"><span class="tt-dot tt-dot-${item.level}"></span><span class="tt-word">${item.word}</span><span class="tt-badge tt-badge-${item.level}">${item.level}</span></span><span class="tt-reason">${item.reason}</span><span class="tt-category">⊡ ${item.category}</span></span></span>`
+      `<span class="tooltip-wrap"><span class="${levelClass}">$1</span><span class="tooltip"><span class="tt-header"><span class="tt-dot tt-dot-${item.level}"></span><span class="tt-word">${item.word}</span><span class="tt-badge tt-badge-${item.level}">${item.level}</span></span><span class="tt-reason">${item.reason}</span><span class="tt-category">Safe hyphen: <strong>${hyphenPreview}</strong> · ${item.category}</span></span></span>`
     );
   });
   return html.replace(/\n/g, "<br>");

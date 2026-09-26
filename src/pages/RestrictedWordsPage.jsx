@@ -104,6 +104,7 @@ export function RestrictedWordsPage({ disabledBuiltinWords, customWords, categor
   const [query, setQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState("All");
   const [sourceFilter, setSourceFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [modal, setModal] = useState({ open: false, initial: null });
 
   const disabledSet = new Set(disabledBuiltinWords.map((w) => w.toLowerCase()));
@@ -112,12 +113,15 @@ export function RestrictedWordsPage({ disabledBuiltinWords, customWords, categor
     ...customWords.map((w) => ({ ...w, source: "custom" })),
   ];
 
+  const wordCategories = Array.from(new Set(combined.map((w) => w.category))).sort();
+
   const q = query.trim().toLowerCase();
   const filtered = combined.filter((w) => {
-    const matchesQ = !q || w.word.toLowerCase().includes(q) || w.category.toLowerCase().includes(q);
+    const matchesQ = !q || w.word.toLowerCase().includes(q) || w.category.toLowerCase().includes(q) || (w.reason && w.reason.toLowerCase().includes(q));
     const matchesLevel = levelFilter === "All" || w.level === levelFilter;
     const matchesSource = sourceFilter === "All" || w.source === sourceFilter;
-    return matchesQ && matchesLevel && matchesSource;
+    const matchesCat = categoryFilter === "All" || w.category === categoryFilter;
+    return matchesQ && matchesLevel && matchesSource && matchesCat;
   }).sort((a, b) => a.word.localeCompare(b.word));
 
   const activeCount = combined.filter((w) => w.enabled).length;
@@ -154,8 +158,19 @@ export function RestrictedWordsPage({ disabledBuiltinWords, customWords, categor
       <div className="filter-row">
         <div className="search-box">
           <Search size={15} />
-          <input placeholder="Search words or categories..." value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input placeholder="Search words, categories, or reasons..." value={query} onChange={(e) => setQuery(e.target.value)} />
         </div>
+        <select
+          className="select"
+          style={{ width: "auto", minWidth: 190 }}
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="All">All Categories ({wordCategories.length})</option>
+          {wordCategories.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
         <div className="chip-row">
           {["All", "high", "medium", "low"].map((l) => (
             <button key={l} className={`chip${levelFilter === l ? " chip-active" : ""}`} onClick={() => setLevelFilter(l)}>{l === "All" ? "All levels" : l}</button>

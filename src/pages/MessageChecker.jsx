@@ -6,16 +6,20 @@ import {
   Files,
   ShieldCheck,
   Save,
-  Wand2,
-  Gauge,
-  Clock
+  FlaskConical,
+  Minus,
+  Eye,
+  Columns
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { TypingTelemetryBar } from "../components/LiveClock";
-import { Button, CategoryField, Modal, RiskGauge } from "../components/primitives";
-import { formatDuration, statusMeta } from "../lib/format";
-import { applyAllFixes, applyFix, buildHighlightHtml } from "../lib/scan";
+import { Button, CategoryField, Modal } from "../components/primitives";
+import { statusMeta } from "../lib/format";
+import { applyAllHyphens, applyHyphen, buildHighlightHtml, hyphenatePhrase } from "../lib/scan";
 import { IssueCard } from "./Dashboard";
+
+const SAMPLE_RISKY_MESSAGE =
+  "Hi! Thanks for reaching out. Can we jump on a quick call on WhatsApp or Skype to discuss your project? You can also email me or send payment via PayPal, and please leave a positive review afterwards!";
 
 export function MessageChecker({
   text,
@@ -33,6 +37,7 @@ export function MessageChecker({
   onResetTimer,
   onTextTyped,
 }) {
+  const [viewMode, setViewMode] = useState("split"); // "split" | "inspector"
   const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   const meta = statusMeta(scan.status);
   const highlightHtml = useMemo(() => buildHighlightHtml(text, scan.found), [text, scan.found]);
@@ -41,29 +46,43 @@ export function MessageChecker({
     if (!text.trim()) return;
     navigator.clipboard.writeText(text).then(() => addToast("Message copied to clipboard."));
   };
+
   const handleClear = () => {
     setText("");
     if (onResetTimer) onResetTimer();
-    addToast("Message and timer cleared.");
+    addToast("Composer and timer cleared.");
   };
-  const handleFixOne = (item) => {
-    setText((prev) => applyFix(prev, item));
-    addToast(`Rewrote "${item.word}".`);
+
+  const handleHyphenateOne = (item) => {
+    const hyphenated = hyphenatePhrase(item.word);
+    setText((prev) => applyHyphen(prev, item));
+    addToast(`Hyphenated "${item.word}" → "${hyphenated}"`);
   };
-  const handleFixAll = () => {
-    setText((prev) => applyAllFixes(prev, scan.found));
-    addToast(`Applied ${scan.found.length} suggested fix${scan.found.length === 1 ? "" : "es"}.`);
+
+  const handleHyphenateAll = () => {
+    if (scan.found.length === 0) return;
+    const count = scan.found.length;
+    setText((prev) => applyAllHyphens(prev, scan.found));
+    addToast(`Added middle hyphen (-) to ${count} conflict word${count === 1 ? "" : "s"}.`);
   };
+
+  const handleLoadSample = () => {
+    setText(SAMPLE_RISKY_MESSAGE);
+    if (onTextTyped) onTextTyped(SAMPLE_RISKY_MESSAGE);
+    addToast("Sample message loaded — try the Hyphenate (-) feature!");
+  };
+
+  const safetyScore = Math.max(0, 100 - scan.score);
 
   return (
     <div className="page-body">
       <PageHeader
-        title="Message Checker"
-        subtitle="Analyze your Fiverr messages before sending them — with live clock & WPM calculation."
+        title="Message Compliance Studio"
+        subtitle="Scan Fiverr messages for restricted words, hyphenate conflict terms (-), and monitor live typing speed."
         onMenu={() => {}}
         right={
           <div className="badge-live">
-            <span className="live-dot" /> Live Scanning
+            <span className="live-dot" /> Real-Time Scanner
           </div>
         }
       />
@@ -79,89 +98,170 @@ export function MessageChecker({
       )}
 
       <div className="checker-grid">
-        {/* LEFT: composer */}
-        <div className="card composer-card">
-          <div className="card-head">
-            <span className="card-label">Message Composer</span>
-            <div className="composer-head-metrics">
-              {typingStats && (
-                <>
-                  <span className="char-meta composer-metric-chip">
-                    <Clock size={11} /> {formatDuration(typingStats.activeMs)}
-                  </span>
-                  <span className="char-meta composer-metric-chip composer-metric-accent">
-                    <Gauge size={11} /> {typingStats.wpm} WPM
-                  </span>
-                </>
-              )}
-              <span className="char-meta">{text.length} chars</span>
-            </div>
-          </div>
+        {/* LEFT WORKBENCH: COMPOSER + HIGHLIGHTED INSPECTOR */}
+        <div className="composer-stack">
+          <div className="card composer-card">
+            <div className="card-head composer-top-bar">
+              <div className="toolbar-group">
+                <span className="card-label">Composer</span>
+                <div className="view-mode-tabs">
+                  <button
+                    type="button"
+                    className={`view-tab${viewMode === "split" ? " view-tab-active" : ""}`}
+                    onClick={() => setViewMode("split")}
+                  >
+                    <Columns size={12} /> Editor + Preview
+                  </button>
+                  <button
+                    type="button"
+                    className={`view-tab${viewMode === "inspector" ? " view-tab-active" : ""}`}
+                    onClick={() => setViewMode("inspector")}
+                  >
+                    <Eye size={12} /> Editor Only
+                  </button>
+                </div>
+              </div>
 
-          <div className="composer-toolbar">
-            <label className="field-label field-label-inline" htmlFor="category-select">Category</label>
-            <input
-              id="category-select"
-              list="checker-category-list"
-              className="select"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              placeholder="Choose or type a category"
-            />
-            <datalist id="checker-category-list">
-              {categories.map((c) => <option key={c} value={c} />)}
-            </datalist>
-            <button className="link-btn insert-link" onClick={onOpenInsert}>
-              <Files size={13} /> Insert Template
-            </button>
-          </div>
-
-          <textarea
-            ref={textareaRef}
-            className="composer-textarea"
-            value={text}
-            onChange={(e) => {
-              const nextVal = e.target.value;
-              setText(nextVal);
-              if (onTextTyped) onTextTyped(nextVal);
-            }}
-            placeholder="Paste or type your Fiverr message here to scan for policy violations and track live typing speed (WPM)..."
-            aria-label="Message content"
-          />
-
-          <div className="composer-footer">
-            <div className="composer-footer-stats">
-              <span className="char-meta">{words} words</span>
-              {typingStats && (
-                <>
-                  <span className="char-meta-sep">·</span>
-                  <span className="char-meta">{typingStats.wpm} words/min</span>
-                  <span className="char-meta-sep">·</span>
-                  <span className="char-meta">{typingStats.cpm} chars/min</span>
-                </>
-              )}
-            </div>
-            <div className="composer-actions">
-              <Button tone="ghost" icon={Trash2} onClick={handleClear}>Clear</Button>
-              <Button tone="secondary" icon={CopyIcon} onClick={handleCopy}>Copy</Button>
-              <Button tone="primary" icon={Save} onClick={onSave} disabled={!text.trim()}>Save Message</Button>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: analysis */}
-        <div className="analysis-col">
-          <div className="card status-card">
-            <div className="card-head"><span className="card-label">Safety Analysis</span></div>
-            <div className="status-body">
-              <RiskGauge score={scan.score} status={scan.status} />
-              <div className="status-side">
-                <span className="status-side-label">Overall Status</span>
-                <span className="status-side-value" style={{ color: meta.color }}>
-                  <meta.Icon size={16} /> {meta.label.toUpperCase()}
-                </span>
+              <div className="composer-head-actions">
+                <div className="toolbar-group">
+                  <input
+                    id="category-select"
+                    list="checker-category-list"
+                    className="select select-compact"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="Category"
+                    aria-label="Category"
+                  />
+                  <datalist id="checker-category-list">
+                    {categories.map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+                <button
+                  type="button"
+                  className="chip-action-btn"
+                  onClick={handleLoadSample}
+                  title="Load a sample message with restricted words to test hyphenation"
+                >
+                  <FlaskConical size={12} /> Sample
+                </button>
+                <button
+                  type="button"
+                  className="chip-action-btn chip-action-accent"
+                  onClick={onOpenInsert}
+                >
+                  <Files size={12} /> Templates
+                </button>
               </div>
             </div>
+
+            <textarea
+              ref={textareaRef}
+              className="composer-textarea"
+              value={text}
+              onChange={(e) => {
+                const nextVal = e.target.value;
+                setText(nextVal);
+                if (onTextTyped) onTextTyped(nextVal);
+              }}
+              placeholder="Write or paste your Fiverr message here... Conflict words will be detected automatically and can be hyphenated (e.g. pay-ment, em-ail, ca-ll) in one click."
+              aria-label="Message content"
+            />
+
+            <div className="composer-footer">
+              <div className="composer-footer-stats">
+                <span className="char-meta">{words} words</span>
+                <span className="char-meta-sep">·</span>
+                <span className="char-meta">{text.length} chars</span>
+                <span className="char-meta-sep">·</span>
+                <span className="char-meta" style={{ color: meta.color }}>
+                  {scan.found.length === 0 ? "0 conflicts" : `${scan.found.length} conflict word${scan.found.length === 1 ? "" : "s"}`}
+                </span>
+              </div>
+              <div className="composer-actions">
+                <Button
+                  tone="ghost"
+                  icon={Trash2}
+                  onClick={handleClear}
+                  disabled={!text && (!typingStats || !typingStats.hasStarted)}
+                >
+                  Clear
+                </Button>
+                {scan.found.length > 0 && (
+                  <Button
+                    tone="hyphen"
+                    icon={Minus}
+                    onClick={handleHyphenateAll}
+                  >
+                    Hyphenate All ({scan.found.length})
+                  </Button>
+                )}
+                <Button
+                  tone="secondary"
+                  icon={CopyIcon}
+                  onClick={handleCopy}
+                  disabled={!text.trim()}
+                >
+                  Copy
+                </Button>
+                <Button
+                  tone="primary"
+                  icon={Save}
+                  onClick={onSave}
+                  disabled={!text.trim()}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {viewMode === "split" && (
+            <div className="card preview-card">
+              <div className="card-head">
+                <span className="card-label">Highlighted Conflict Preview</span>
+                <span className="char-meta">
+                  {scan.found.length > 0
+                    ? "Hover any highlighted word to see hyphenated form & policy reason"
+                    : "No restricted words highlighted"}
+                </span>
+              </div>
+              <div className="preview-body" dangerouslySetInnerHTML={{ __html: highlightHtml || "" }} />
+              {!text && (
+                <div className="preview-placeholder">
+                  Live highlighted preview will appear here as you type...
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT WORKBENCH: COMPLIANCE METER + CONFLICT WORDS HYPHENATOR */}
+        <div className="analysis-col">
+          <div className="card status-card">
+            <div className="status-compact-top">
+              <div className="status-verdict-block">
+                <span className="status-side-label">Compliance Status</span>
+                <span className="status-side-value" style={{ color: meta.color }}>
+                  <meta.Icon size={17} /> {meta.label}
+                </span>
+              </div>
+              <div className="status-score-block">
+                <span className="status-score-num mono" style={{ color: meta.color }}>{safetyScore}%</span>
+                <span className="status-side-label">Safety Score</span>
+              </div>
+            </div>
+
+            <div className="safety-progress-track">
+              <div
+                className="safety-progress-fill"
+                style={{
+                  width: `${safetyScore}%`,
+                  background: meta.color,
+                }}
+              />
+            </div>
+
             <div className="risk-pills">
               <div className={`risk-pill high${scan.highCount ? " active" : ""}`}>
                 <span className="pill-count">{scan.highCount}</span>
@@ -180,34 +280,41 @@ export function MessageChecker({
 
           <div className="card issues-card">
             <div className="card-head">
-              <span className="card-label">Detected Issues</span>
-              {scan.found.length > 0 ? (
-                <button type="button" className="fix-all-btn" onClick={handleFixAll}>
-                  <Wand2 size={12} /> Fix all ({scan.found.length})
+              <span className="card-label">Conflict Words ({scan.found.length})</span>
+              {scan.found.length > 0 && (
+                <button
+                  type="button"
+                  className="hyphen-all-btn"
+                  onClick={handleHyphenateAll}
+                  title="Add a hyphen (-) in the middle of all detected conflict words"
+                >
+                  <Minus size={12} /> Hyphenate All (-)
                 </button>
-              ) : (
-                <span className="char-meta">{scan.found.length} found</span>
               )}
             </div>
             <div className="issues-body">
               {scan.found.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">{text ? <ShieldCheck size={26} /> : <Search size={26} />}</div>
-                  <h4>{text ? "Message looks safe!" : "No issues detected"}</h4>
-                  <p>{text ? "No potential Fiverr policy violations detected." : "Start typing to scan your message."}</p>
+                  <div className="empty-icon">{text ? <ShieldCheck size={28} /> : <Search size={28} />}</div>
+                  <h4>{text ? "Message is Safe & Compliant" : "No Conflict Words"}</h4>
+                  <p>
+                    {text
+                      ? "No restricted words found. You can safely copy and send this message."
+                      : "Start typing in the composer to detect restricted words and hyphenate them."}
+                  </p>
                 </div>
               ) : (
-                scan.found.map((item) => <IssueCard key={item.word} item={item} onFix={handleFixOne} />)
+                scan.found.map((item) => (
+                  <IssueCard
+                    key={item.word}
+                    item={item}
+                    onHyphenate={handleHyphenateOne}
+                  />
+                ))
               )}
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="card preview-card">
-        <div className="card-head"><span className="card-label">Highlighted Preview</span></div>
-        <div className="preview-body" dangerouslySetInnerHTML={{ __html: highlightHtml || "" }} />
-        {!text && <div className="preview-placeholder">Highlighted preview will appear here...</div>}
       </div>
     </div>
   );

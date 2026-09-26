@@ -1,15 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
+import App from "./App";
 import "./style.css";
 
-// Guard against Vite HMR re-running this module and calling
-// createRoot() again on the same #root element (dev-mode only warning,
-// harmless but noisy in the console).
-const container = document.getElementById("root");
-const root = container._reactRoot || (container._reactRoot = ReactDOM.createRoot(container));
+const link = document.createElement("link");
+link.href = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap";
+link.rel = "stylesheet";
+document.head.appendChild(link);
 
-root.render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>

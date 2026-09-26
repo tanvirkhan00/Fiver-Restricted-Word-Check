@@ -582,7 +582,11 @@ export default function StandaloneApp() {
         page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}
         theme={theme} toggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)}
         user={user} onSignIn={handleSignIn} onSignOut={handleSignOut}
-        typingStats={typingStats}
+        counts={{
+          templates: templates.length,
+          saved: messages.length,
+          words: wordList.length,
+        }}
       />
 
       <main className="main-area">

@@ -1,7 +1,6 @@
-import StandaloneApp from "./StandaloneApp.jsx";
+import React from "react";
+import StandaloneApp from "./StandaloneApp";
 
-function App() {
+export default function App() {
   return <StandaloneApp />;
 }
-
-export default App;

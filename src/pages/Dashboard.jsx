@@ -12,13 +12,14 @@ import {
   ShieldAlert,
   ListChecks,
   TrendingUp,
-  Wand2,
   Gauge,
-  Keyboard
+  Keyboard,
+  Minus
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/primitives";
 import { formatDuration, statusMeta, timeAgo } from "../lib/format";
+import { hyphenatePhrase } from "../lib/scan";
 
 export function Dashboard({ messages, templates, activity, setPage, startNewCheck, typingStats }) {
   const safeCount = messages.filter((m) => m.riskStatus === "safe").length;
@@ -26,8 +27,8 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
 
   const stats = [
     { label: "Messages Checked", value: messages.length, icon: MessageSquareText, tone: "accent" },
-    { label: "Safe Messages", value: safeCount, icon: ShieldCheck, tone: "low" },
-    { label: "Needing Attention", value: attentionCount, icon: ShieldAlert, tone: "high" },
+    { label: "Compliant Messages", value: safeCount, icon: ShieldCheck, tone: "low" },
+    { label: "Flagged Drafts", value: attentionCount, icon: ShieldAlert, tone: "high" },
     { label: "Saved Templates", value: templates.length, icon: Files, tone: "medium" },
   ];
 
@@ -38,13 +39,13 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
   const thisWeekSafe = thisWeek.filter((m) => m.riskStatus === "safe").length;
   const thisWeekAttention = thisWeek.length - thisWeekSafe;
   const weekDelta = thisWeek.length - lastWeek.length;
-  const safePct = thisWeek.length ? Math.round((thisWeekSafe / thisWeek.length) * 100) : 0;
+  const safePct = thisWeek.length ? Math.round((thisWeekSafe / thisWeek.length) * 100) : 100;
 
   const topTemplates = [...templates].filter((t) => t.usageCount > 0).sort((a, b) => b.usageCount - a.usageCount).slice(0, 3);
 
   return (
     <div className="page-body">
-      <PageHeader title="Dashboard" subtitle="Your Fiverr message safety, at a glance." onMenu={() => {}} />
+      <PageHeader title="Workspace Overview" subtitle="Monitor message compliance, templates, and live typing performance." onMenu={() => {}} />
 
       <div className="stat-grid">
         {stats.map((s) => (
@@ -61,17 +62,17 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
       <div className="quick-actions">
         <button className="qa-card" onClick={startNewCheck || (() => setPage("checker"))}>
           <MessageSquareText size={18} />
-          <span>Check New Message</span>
+          <span>Open Message Checker</span>
           <ArrowRight size={14} className="qa-arrow" />
         </button>
         <button className="qa-card" onClick={() => setPage("templates")}>
           <Plus size={18} />
-          <span>Create Template</span>
+          <span>Manage Templates</span>
           <ArrowRight size={14} className="qa-arrow" />
         </button>
         <button className="qa-card" onClick={() => setPage("saved")}>
           <BookmarkCheck size={18} />
-          <span>View Saved Messages</span>
+          <span>Saved Drafts Archive</span>
           <ArrowRight size={14} className="qa-arrow" />
         </button>
       </div>
@@ -79,9 +80,9 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
       {typingStats && (
         <div className="card dash-typing-card">
           <div className="card-head">
-            <span className="card-label">Live Typing &amp; Session Clock</span>
+            <span className="card-label">Live Typing &amp; Session Telemetry</span>
             <button className="link-btn" onClick={startNewCheck || (() => setPage("checker"))}>
-              Open Message Composer <ArrowRight size={12} />
+              Go to Composer <ArrowRight size={12} />
             </button>
           </div>
           <div className="dash-typing-body">
@@ -89,21 +90,21 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
               <div className="stat-icon stat-icon-low"><Gauge size={18} /></div>
               <div>
                 <span className="stat-value mono">{typingStats.wpm} <small className="dash-unit">WPM</small></span>
-                <span className="stat-label">Current Words / Min</span>
+                <span className="stat-label">Words Per Minute</span>
               </div>
             </div>
             <div className="dash-typing-metric">
               <div className="stat-icon stat-icon-accent"><Clock size={18} /></div>
               <div>
                 <span className="stat-value mono">{formatDuration(typingStats.activeMs)}</span>
-                <span className="stat-label">Active Typing Timer</span>
+                <span className="stat-label">Active Session Clock</span>
               </div>
             </div>
             <div className="dash-typing-metric">
               <div className="stat-icon stat-icon-medium"><Keyboard size={18} /></div>
               <div>
                 <span className="stat-value mono">{typingStats.peakWpm} <small className="dash-unit">WPM</small></span>
-                <span className="stat-label">Peak Session Speed</span>
+                <span className="stat-label">Peak Speed</span>
               </div>
             </div>
             <div className="dash-typing-metric">
@@ -119,7 +120,7 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
 
       <div className="week-card card">
         <div className="card-head">
-          <span className="card-label">This Week</span>
+          <span className="card-label">7-Day Compliance Health</span>
           {lastWeek.length > 0 && (
             <span className={`week-delta ${weekDelta >= 0 ? "week-delta-up" : "week-delta-down"}`}>
               <TrendingUp size={12} /> {weekDelta >= 0 ? "+" : ""}{weekDelta} vs last week
@@ -129,20 +130,20 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
         <div className="week-body">
           <div className="week-stat">
             <span className="week-stat-value">{thisWeek.length}</span>
-            <span className="week-stat-label">Messages checked</span>
+            <span className="week-stat-label">Checked this week</span>
           </div>
           <div className="week-bar-wrap">
             <div className="week-bar">
               <div className="week-bar-fill" style={{ width: `${safePct}%` }} />
             </div>
             <div className="week-bar-legend">
-              <span><span className="dot dot-safe" /> {thisWeekSafe} safe</span>
-              <span><span className="dot dot-high" /> {thisWeekAttention} needed attention</span>
+              <span><span className="dot dot-safe" /> {thisWeekSafe} compliant</span>
+              <span><span className="dot dot-high" /> {thisWeekAttention} flagged</span>
             </div>
           </div>
           {topTemplates.length > 0 && (
             <div className="week-top-templates">
-              <span className="week-stat-label">Most used templates</span>
+              <span className="week-stat-label">Top templates</span>
               {topTemplates.map((t) => (
                 <div className="week-top-row" key={t.id}>
                   <span>{t.name}</span>
@@ -157,7 +158,7 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
       <div className="dash-columns">
         <div className="card">
           <div className="card-head">
-            <span className="card-label">Recent Messages</span>
+            <span className="card-label">Recent Saved Messages</span>
             <button className="link-btn" onClick={() => setPage("saved")}>View all</button>
           </div>
           <div className="list-body">
@@ -184,7 +185,7 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
         </div>
 
         <div className="card">
-          <div className="card-head"><span className="card-label">Recent Activity</span></div>
+          <div className="card-head"><span className="card-label">Activity Log</span></div>
           <div className="list-body">
             {activity.length === 0 ? (
               <EmptyState icon={ListChecks} title="No activity yet" subtitle="Actions you take will show up here." />
@@ -204,28 +205,31 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
   );
 }
 
-export function IssueCard({ item, onFix }) {
+export function IssueCard({ item, onHyphenate }) {
+  const hyphenated = hyphenatePhrase(item.word);
   return (
     <div className={`issue-card issue-${item.level}`}>
       <div className="issue-top">
         <span className={`issue-dot issue-dot-${item.level}`} />
         <span className="issue-keyword">&ldquo;{item.word}&rdquo;</span>
+        <ArrowRight size={11} className="issue-arrow" />
+        <span className="issue-hyphen-preview mono">&ldquo;{hyphenated}&rdquo;</span>
         <span className={`issue-badge issue-badge-${item.level}`}>{item.level}</span>
       </div>
       <div className="flag-notice">
         <AlertTriangle size={12} className="flag-icon" />
         <span>{item.reason}</span>
       </div>
-      <div className="issue-suggestion">
-        {item.fix
-          ? <>Suggested fix: replace with <strong>&ldquo;{item.fix}&rdquo;</strong>.</>
-          : "Suggested fix: remove this phrase and keep the conversation inside Fiverr's messaging and payment system."}
-      </div>
       <div className="issue-bottom-row">
-        <div className="issue-cat">Category: {item.category}</div>
-        {onFix && (
-          <button type="button" className="fix-btn" onClick={() => onFix(item)}>
-            <Wand2 size={12} /> Apply fix
+        <div className="issue-cat">{item.category}</div>
+        {onHyphenate && (
+          <button
+            type="button"
+            className="hyphen-btn"
+            onClick={() => onHyphenate(item)}
+            title={`Insert hyphen in the middle: "${item.word}" → "${hyphenated}"`}
+          >
+            <Minus size={12} /> Add Hyphen ({hyphenated})
           </button>
         )}
       </div>
