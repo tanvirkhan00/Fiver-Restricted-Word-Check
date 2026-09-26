@@ -116,7 +116,3 @@ export function SettingsPage({ theme, toggleTheme, settings, setSettings, onClea
     </div>
   );
 }
-
-/* ======================================================================
-   ROOT APP
-====================================================================== */

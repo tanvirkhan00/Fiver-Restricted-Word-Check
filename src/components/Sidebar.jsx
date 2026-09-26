@@ -6,12 +6,25 @@ import {
   X,
   Sun,
   Moon,
-  Command
+  Command,
+  Gauge
 } from "lucide-react";
 import { NAV_ITEMS } from "../data/navItems";
-import { auth } from "../firebase/config";
+import { formatDuration } from "../lib/format";
 
-export function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggleTheme, onOpenPalette, user, onSignIn, onSignOut }) {
+export function Sidebar({
+  page,
+  setPage,
+  mobileOpen,
+  setMobileOpen,
+  theme,
+  toggleTheme,
+  onOpenPalette,
+  user,
+  onSignIn,
+  onSignOut,
+  typingStats,
+}) {
   const isGuest = !user || user.isAnonymous;
   const initials = (user?.displayName || "Guest")
     .split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -48,6 +61,36 @@ export function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggl
           ))}
         </nav>
 
+        {typingStats && (
+          <div
+            className="sidebar-wpm-widget"
+            onClick={() => { setPage("checker"); setMobileOpen(false); }}
+            title="Live typing speed & session clock counter — click to open Message Checker"
+          >
+            <div className="sidebar-wpm-head">
+              <Gauge size={13} />
+              <span>Live Typing Meter</span>
+              <span className={`timer-dot ${typingStats.isTyping && !typingStats.isPaused ? "timer-dot-active" : "timer-dot-idle"}`} />
+            </div>
+            <div className="sidebar-wpm-stats">
+              <div>
+                <span className="sidebar-wpm-num mono">{typingStats.wpm}</span>
+                <span className="sidebar-wpm-label">WPM</span>
+              </div>
+              <div className="sidebar-wpm-divider" />
+              <div>
+                <span className="sidebar-wpm-num mono">{formatDuration(typingStats.activeMs)}</span>
+                <span className="sidebar-wpm-label">Timer</span>
+              </div>
+              <div className="sidebar-wpm-divider" />
+              <div>
+                <span className="sidebar-wpm-num mono">{typingStats.peakWpm}</span>
+                <span className="sidebar-wpm-label">Peak</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="sidebar-footer">
           <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
             {theme === "dark" ? <Moon size={15} /> : <Sun size={15} />}
@@ -79,4 +122,3 @@ export function Sidebar({ page, setPage, mobileOpen, setMobileOpen, theme, toggl
     </>
   );
 }
-

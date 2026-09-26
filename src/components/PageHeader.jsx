@@ -1,7 +1,6 @@
 import React from "react";
-import {
-  Menu
-} from "lucide-react";
+import { Menu } from "lucide-react";
+import { LiveClockPill } from "./LiveClock";
 
 export function PageHeader({ title, subtitle, onMenu, right }) {
   return (
@@ -13,11 +12,10 @@ export function PageHeader({ title, subtitle, onMenu, right }) {
           {subtitle && <p>{subtitle}</p>}
         </div>
       </div>
-      {right && <div className="page-header-right">{right}</div>}
+      <div className="page-header-right">
+        <LiveClockPill />
+        {right}
+      </div>
     </div>
   );
 }
-
-/* ======================================================================
-   DASHBOARD
-====================================================================== */

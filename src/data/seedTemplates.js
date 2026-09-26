@@ -1,7 +1,3 @@
-import {
-  Check
-} from "lucide-react";
-
 export const SEED_TEMPLATES = [
   { id: "t1", name: "Initial Client Update", category: "First Draft", description: "Kick off a new order with a friendly status note.", content: "Hi! Thanks so much for your order. I'm getting started on it right away and will keep you posted on progress here in the Fiverr inbox.", tags: ["intro", "starter"], createdAt: Date.now() - 86400000 * 6, updatedAt: Date.now() - 86400000 * 6, riskStatus: "safe", riskScore: 0, pinned: true, usageCount: 4 },
   { id: "t2", name: "Meeting Request", category: "Meeting Approach", description: "Ask to hop on a Fiverr voice/video session.", content: "Would you be open to a quick call through Fiverr's built-in voice feature so I can confirm a few details before I begin?", tags: ["scheduling"], createdAt: Date.now() - 86400000 * 5, updatedAt: Date.now() - 86400000 * 5, riskStatus: "medium", riskScore: 10, pinned: false, usageCount: 1 },

@@ -1,7 +1,3 @@
-import {
-  X
-} from "lucide-react";
-
 export const RESTRICTED_WORDS = [
   { word: "reach me on", level: "high", category: "Off-Platform Contact", reason: "Asking to be reached on external platforms bypasses Fiverr's communication policy and puts both parties at risk of scams and loss of protection.", fix: "reach me here in Fiverr chat" },
   { word: "text", level: "high", category: "Off-Platform Contact", reason: "Requesting texts outside Fiverr removes all transaction records and voids buyer/seller protections.", fix: "message" },
@@ -79,7 +75,7 @@ export const RESTRICTED_WORDS = [
   { word: "talk", level: "low", category: "Communication Signal", reason: "Vague communication language — usually harmless but may precede off-platform requests.", fix: "connect" },
   { word: "reach", level: "low", category: "Communication Signal", reason: "Could indicate intent to contact outside platform — context-dependent risk.", fix: "connect" },
 
-  // Messaging apps (Fiverr's Trust & Safety team and community reports repeatedly flag these as the #1 off-platform redirect vector)
+  // Messaging apps
   { word: "whatsapp", level: "high", category: "Social Media Bypass", reason: "WhatsApp is the most commonly reported off-platform redirect tool on Fiverr and is explicitly against the off-platform activity policy.", fix: "" },
   { word: "telegram", level: "high", category: "Social Media Bypass", reason: "Telegram handles are a well-documented scam and off-platform solicitation vector reported frequently by the Fiverr community.", fix: "" },
   { word: "skype", level: "high", category: "Social Media Bypass", reason: "Requesting Skype contact moves communication outside Fiverr's monitored and protected messaging system.", fix: "" },
@@ -91,7 +87,7 @@ export const RESTRICTED_WORDS = [
   { word: "kik", level: "medium", category: "Social Media Bypass", reason: "Kik usernames are used to move conversations off Fiverr's monitored system.", fix: "" },
   { word: "line app", level: "medium", category: "Social Media Bypass", reason: "LINE is an off-platform messaging app referenced in redirect attempts.", fix: "" },
 
-  // Payment methods & financial details (Fiverr's Community Standards on financial safety and off-platform payment)
+  // Payment methods & financial details
   { word: "paypal", level: "high", category: "Payment Bypass", reason: "PayPal transfers outside Fiverr checkout are unprotected and explicitly against the off-platform payment policy.", fix: "Fiverr's secure checkout" },
   { word: "zelle", level: "high", category: "Payment Bypass", reason: "Zelle payments are irreversible and prohibited for Fiverr transactions.", fix: "Fiverr's secure checkout" },
   { word: "payoneer", level: "high", category: "Payment Bypass", reason: "Requesting Payoneer transfers outside Fiverr checkout bypasses buyer/seller protections.", fix: "Fiverr's secure checkout" },
@@ -112,7 +108,7 @@ export const RESTRICTED_WORDS = [
   { word: "driver's license", level: "high", category: "Sensitive Information", reason: "Government ID numbers should never be shared in messages; this is a strong identity-theft red flag.", fix: "" },
   { word: "swift code", level: "medium", category: "Sensitive Information", reason: "SWIFT/BIC codes combined with other banking details can enable unauthorized transfers.", fix: "" },
 
-  // Fee-avoidance language (a specific, frequently-cited off-platform work pattern)
+  // Fee-avoidance language
   { word: "avoid the fee", level: "high", category: "Off-Platform Work", reason: "Explicitly proposing to avoid Fiverr's service fee is solicitation of off-platform work and a direct TOS violation.", fix: "" },
   { word: "save on fees", level: "high", category: "Off-Platform Work", reason: "Offering to save on fees by working outside Fiverr is prohibited off-platform solicitation.", fix: "" },
   { word: "cheaper if we", level: "high", category: "Off-Platform Work", reason: "Offering a discount for moving off-platform is a direct TOS violation and voids buyer/seller protection.", fix: "" },

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {
   BookmarkCheck,
-  Tags,
   Search,
   Copy as CopyIcon,
   Trash2,
@@ -54,7 +53,6 @@ export function SavedMessages({ messages, categories, onUse, onEdit, onDelete, o
         <EmptyState icon={Search} title="No messages match your search" subtitle="Try a different keyword or filter." />
       ) : (
         <>
-          {/* Desktop table */}
           <div className="table-wrap">
             <table className="msg-table">
               <thead>
@@ -90,7 +88,6 @@ export function SavedMessages({ messages, categories, onUse, onEdit, onDelete, o
             </table>
           </div>
 
-          {/* Mobile cards */}
           <div className="msg-card-list">
             {filtered.map((m) => {
               const meta = statusMeta(m.riskStatus);
@@ -122,9 +119,6 @@ export function SavedMessages({ messages, categories, onUse, onEdit, onDelete, o
   );
 }
 
-/* ======================================================================
-   EDIT SAVED MESSAGE MODAL (reuses form styling)
-====================================================================== */
 export function EditMessageModal({ open, onClose, message, categories, onConfirm }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("General");
@@ -163,8 +157,3 @@ export function EditMessageModal({ open, onClose, message, categories, onConfirm
     </Modal>
   );
 }
-
-/* ======================================================================
-   RESTRICTED WORDS PAGE — view, enable/disable built-in words, and
-   add/edit/remove your own custom words, right from the UI.
-====================================================================== */

@@ -11,15 +11,16 @@ import {
   ShieldCheck,
   ShieldAlert,
   ListChecks,
-  Save,
   TrendingUp,
-  Wand2
+  Wand2,
+  Gauge,
+  Keyboard
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/primitives";
-import { statusMeta, timeAgo } from "../lib/format";
+import { formatDuration, statusMeta, timeAgo } from "../lib/format";
 
-export function Dashboard({ messages, templates, activity, setPage, startNewCheck }) {
+export function Dashboard({ messages, templates, activity, setPage, startNewCheck, typingStats }) {
   const safeCount = messages.filter((m) => m.riskStatus === "safe").length;
   const attentionCount = messages.filter((m) => m.riskStatus !== "safe").length;
 
@@ -50,7 +51,7 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
           <div className="stat-card" key={s.label}>
             <div className={`stat-icon stat-icon-${s.tone}`}><s.icon size={18} /></div>
             <div>
-              <span className="stat-value">{s.value}</span>
+              <span className="stat-value mono">{s.value}</span>
               <span className="stat-label">{s.label}</span>
             </div>
           </div>
@@ -58,7 +59,7 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
       </div>
 
       <div className="quick-actions">
-        <button className="qa-card" onClick={() => setPage("checker")}>
+        <button className="qa-card" onClick={startNewCheck || (() => setPage("checker"))}>
           <MessageSquareText size={18} />
           <span>Check New Message</span>
           <ArrowRight size={14} className="qa-arrow" />
@@ -74,6 +75,47 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
           <ArrowRight size={14} className="qa-arrow" />
         </button>
       </div>
+
+      {typingStats && (
+        <div className="card dash-typing-card">
+          <div className="card-head">
+            <span className="card-label">Live Typing &amp; Session Clock</span>
+            <button className="link-btn" onClick={startNewCheck || (() => setPage("checker"))}>
+              Open Message Composer <ArrowRight size={12} />
+            </button>
+          </div>
+          <div className="dash-typing-body">
+            <div className="dash-typing-metric">
+              <div className="stat-icon stat-icon-low"><Gauge size={18} /></div>
+              <div>
+                <span className="stat-value mono">{typingStats.wpm} <small className="dash-unit">WPM</small></span>
+                <span className="stat-label">Current Words / Min</span>
+              </div>
+            </div>
+            <div className="dash-typing-metric">
+              <div className="stat-icon stat-icon-accent"><Clock size={18} /></div>
+              <div>
+                <span className="stat-value mono">{formatDuration(typingStats.activeMs)}</span>
+                <span className="stat-label">Active Typing Timer</span>
+              </div>
+            </div>
+            <div className="dash-typing-metric">
+              <div className="stat-icon stat-icon-medium"><Keyboard size={18} /></div>
+              <div>
+                <span className="stat-value mono">{typingStats.peakWpm} <small className="dash-unit">WPM</small></span>
+                <span className="stat-label">Peak Session Speed</span>
+              </div>
+            </div>
+            <div className="dash-typing-metric">
+              <div className="stat-icon stat-icon-accent"><TrendingUp size={18} /></div>
+              <div>
+                <span className="stat-value mono">{typingStats.cpm} <small className="dash-unit">CPM</small></span>
+                <span className="stat-label">Characters / Min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="week-card card">
         <div className="card-head">
@@ -162,9 +204,6 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
   );
 }
 
-/* ======================================================================
-   MESSAGE CHECKER
-====================================================================== */
 export function IssueCard({ item, onFix }) {
   return (
     <div className={`issue-card issue-${item.level}`}>
@@ -193,4 +232,3 @@ export function IssueCard({ item, onFix }) {
     </div>
   );
 }
-

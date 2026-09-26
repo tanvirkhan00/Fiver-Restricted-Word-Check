@@ -117,9 +117,6 @@ export function CategoryPill({ value }) {
   return <span className="cat-pill">{value}</span>;
 }
 
-/* Type-or-pick category input. Backed by a native <datalist> so people get
-   autocomplete suggestions from existing categories but can freely type
-   a brand-new one — saving a message with it is what "creates" it. */
 export function CategoryField({ id, value, onChange, categories, label = "Category" }) {
   const listId = `${id}-catlist`;
   return (

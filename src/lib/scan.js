@@ -26,8 +26,6 @@ export function scanMessage(text, wordList = RESTRICTED_WORDS) {
   return { found, highCount, medCount, lowCount, score, status };
 }
 
-/* Apply a single flagged word/phrase's suggested safe rewrite. An empty
-   `fix` means "remove it" rather than swap in a replacement. */
 export function applyFix(text, item) {
   const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`\\b${escaped}\\b`, "gi");
@@ -35,7 +33,6 @@ export function applyFix(text, item) {
   return replaced.replace(/[ \t]{2,}/g, " ").replace(/ +([,.!?])/g, "$1").trim();
 }
 
-/* Apply every currently-detected issue's fix in one pass. */
 export function applyAllFixes(text, found) {
   let next = text;
   [...found].sort((a, b) => b.word.length - a.word.length).forEach((item) => {
@@ -44,8 +41,6 @@ export function applyAllFixes(text, found) {
   return next;
 }
 
-/* Combine the built-in word list (minus anything the user disabled) with
-   the user's own custom words (only the enabled ones), for scanning. */
 export function buildWordList(disabledBuiltinWords, customWords) {
   const disabled = new Set((disabledBuiltinWords || []).map((w) => w.toLowerCase()));
   const builtinActive = RESTRICTED_WORDS.filter((w) => !disabled.has(w.word.toLowerCase()));

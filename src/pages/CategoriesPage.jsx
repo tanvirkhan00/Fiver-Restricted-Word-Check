@@ -35,7 +35,3 @@ export function CategoriesPage({ messages, templates, categories, setPage, setCh
     </div>
   );
 }
-
-/* ======================================================================
-   SETTINGS PAGE
-====================================================================== */

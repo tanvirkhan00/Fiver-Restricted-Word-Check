@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Button, CategoryField, CategoryPill, EmptyState, IconButton, Modal } from "../components/primitives";
-import { CATEGORIES } from "../data/constants";
 import { RESTRICTED_WORDS } from "../data/restrictedWords";
 
 export function WordFormModal({ open, onClose, initial, categories, onConfirm }) {
@@ -201,7 +200,3 @@ export function RestrictedWordsPage({ disabledBuiltinWords, customWords, categor
     </div>
   );
 }
-
-/* ======================================================================
-   CATEGORIES PAGE
-====================================================================== */

@@ -23,12 +23,14 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { InsertTemplateModal, TemplateModal, TemplatesPage } from "./pages/TemplatesPage";
 import { CSS } from "./styles/appStyles";
 
-export default function App() {
+const IDLE_TIMEOUT_MS = 4500;
+
+export default function StandaloneApp() {
   const [authReady, setAuthReady] = useState(false);
   const [user, setUser] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [theme, setTheme] = useState("dark");
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState("checker");
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const [messages, setMessages] = useState([]);
@@ -42,6 +44,108 @@ export default function App() {
   const [category, setCategory] = useState("General");
   const textareaRef = useRef(null);
 
+  /* ---- Live Typing Clock Counter & WPM State ---- */
+  const [activeMs, setActiveMs] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [peakWpm, setPeakWpm] = useState(0);
+  const lastKeystrokeRef = useRef(0);
+  const lastTickRef = useRef(0);
+
+  const handleTextTyped = useCallback((nextText) => {
+    const now = Date.now();
+    if (!nextText.trim()) {
+      setIsTyping(false);
+      return;
+    }
+    lastKeystrokeRef.current = now;
+    if (!hasStarted) {
+      setHasStarted(true);
+      lastTickRef.current = now;
+    }
+    if (isPaused) {
+      setIsPaused(false);
+      lastTickRef.current = now;
+    }
+    if (!isTyping) {
+      setIsTyping(true);
+      lastTickRef.current = now;
+    }
+  }, [hasStarted, isPaused, isTyping]);
+
+  useEffect(() => {
+    if (!hasStarted || isPaused) return;
+    lastTickRef.current = Date.now();
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastKey = now - lastKeystrokeRef.current;
+      if (timeSinceLastKey <= IDLE_TIMEOUT_MS) {
+        const delta = Math.max(0, now - lastTickRef.current);
+        setActiveMs((prev) => prev + delta);
+        setIsTyping(true);
+      } else {
+        setIsTyping(false);
+      }
+      lastTickRef.current = now;
+    }, 250);
+    return () => clearInterval(interval);
+  }, [hasStarted, isPaused]);
+
+  const wordsCount = useMemo(
+    () => (text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0),
+    [text]
+  );
+
+  const { wpm, cpm } = useMemo(() => {
+    if (!hasStarted || wordsCount === 0) return { wpm: 0, cpm: 0 };
+    // Use at least 2.5 seconds denominator so the very first word doesn't spike artificially
+    const effectiveMinutes = Math.max(activeMs, 2500) / 60000;
+    const calcWpm = Math.round(wordsCount / effectiveMinutes);
+    const calcCpm = Math.round(text.length / effectiveMinutes);
+    return { wpm: calcWpm, cpm: calcCpm };
+  }, [hasStarted, wordsCount, activeMs, text.length]);
+
+  useEffect(() => {
+    if (activeMs >= 1500 && wpm > peakWpm) {
+      setPeakWpm(wpm);
+    }
+  }, [wpm, activeMs, peakWpm]);
+
+  const handleTogglePause = useCallback(() => {
+    if (!hasStarted) return;
+    setIsPaused((prev) => {
+      const next = !prev;
+      if (!next) {
+        const now = Date.now();
+        lastKeystrokeRef.current = now;
+        lastTickRef.current = now;
+        setIsTyping(true);
+      }
+      return next;
+    });
+  }, [hasStarted]);
+
+  const handleResetTimer = useCallback(() => {
+    setActiveMs(0);
+    setIsTyping(false);
+    setIsPaused(false);
+    setHasStarted(false);
+    setPeakWpm(0);
+    lastKeystrokeRef.current = 0;
+    lastTickRef.current = 0;
+  }, []);
+
+  const typingStats = useMemo(() => ({
+    activeMs,
+    wpm,
+    cpm,
+    peakWpm,
+    isTyping,
+    isPaused,
+    hasStarted,
+  }), [activeMs, wpm, cpm, peakWpm, isTyping, isPaused, hasStarted]);
+
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [templateModal, setTemplateModal] = useState({ open: false, initial: null });
   const [editMessage, setEditMessage] = useState(null);
@@ -49,47 +153,41 @@ export default function App() {
   const [confirmDialog, setConfirmDialog] = useState(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-   /* ---- Hide the static HTML preloader once the real app data is ready.
-     If the user is signed in with Google, flash a personalized welcome
-     message (with avatar) first before fading out. ---- */
+  /* ---- Hide the static HTML preloader once the real app data is ready ---- */
   useEffect(() => {
-  if (!authReady || !loaded) return;
-  const preloader = document.getElementById("preloader");
-  if (!preloader) return;
+    if (!authReady || !loaded) return;
+    const preloader = document.getElementById("preloader");
+    if (!preloader) return;
 
-  // Firebase's top-level displayName/photoURL can be null on accounts that
-  // started anonymous and were later linked to Google — fall back to the
-  // linked provider's own profile data, which usually still has it.
-  const providerInfo = user?.providerData?.[0] || {};
-  const displayName = user?.displayName || providerInfo.displayName;
-  const photoURL = user?.photoURL || providerInfo.photoURL;
+    const providerInfo = user?.providerData?.[0] || {};
+    const displayName = user?.displayName || providerInfo.displayName;
+    const photoURL = user?.photoURL || providerInfo.photoURL;
 
-  const isSignedIn = user && !user.isAnonymous && (displayName || user.email);
+    const isSignedIn = user && !user.isAnonymous && (displayName || user.email);
 
-  const fadeOutPreloader = () => {
-  preloader.classList.add("fade-out");
-  setTimeout(() => preloader.remove(), 500);
-  };
+    const fadeOutPreloader = () => {
+      preloader.classList.add("fade-out");
+      setTimeout(() => preloader.remove(), 500);
+    };
 
-  if (isSignedIn) {
-  const welcomeEl = document.getElementById("pl-welcome");
-  const avatarEl = document.getElementById("pl-avatar");
-  const name = displayName ? displayName.split(" ")[0] : user.email.split("@")[0];
+    if (isSignedIn) {
+      const welcomeEl = document.getElementById("pl-welcome");
+      const avatarEl = document.getElementById("pl-avatar");
+      const name = displayName ? displayName.split(" ")[0] : user.email.split("@")[0];
 
-  if (welcomeEl) {
-  welcomeEl.textContent = `Welcome back, ${name}`;
-  welcomeEl.classList.add("show");
-  }
-  if (avatarEl && photoURL) {
-  avatarEl.src = photoURL;
-  avatarEl.classList.add("show");
-  }
-  setTimeout(fadeOutPreloader, 900);
-  } else {
-  fadeOutPreloader();
-  }
+      if (welcomeEl) {
+        welcomeEl.textContent = `Welcome back, ${name}`;
+        welcomeEl.classList.add("show");
+      }
+      if (avatarEl && photoURL) {
+        avatarEl.src = photoURL;
+        avatarEl.classList.add("show");
+      }
+      setTimeout(fadeOutPreloader, 900);
+    } else {
+      fadeOutPreloader();
+    }
   }, [authReady, loaded, user]);
-
 
   /* ---- Global Ctrl/Cmd+K shortcut for the command palette ---- */
   useEffect(() => {
@@ -104,7 +202,6 @@ export default function App() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-
   const [toasts, setToasts] = useState([]);
   const addToast = useCallback((message, tone = "success") => {
     const id = uid();
@@ -116,30 +213,36 @@ export default function App() {
     setActivity((a) => [{ id: uid(), label, timestamp: Date.now() }, ...a].slice(0, 30));
   }, []);
 
-  /* ---- Auth: silently sign in anonymously if nobody is logged in, then
-     track whoever ends up signed in (anonymous or Google).
-
-     IMPORTANT: ensureSignedIn() is only ever called from inside this
-     listener, when Firebase explicitly reports "nobody is signed in"
-     (u === null) — never eagerly on mount. Calling it eagerly races with
-     Firebase restoring a persisted session on page load and was the cause
-     of Google logins getting silently replaced by a fresh anonymous
-     session on refresh. ---- */
+  /* ---- Auth with graceful fallback so preview never hangs ---- */
   useEffect(() => {
     let cancelled = false;
+    const fallbackTimer = setTimeout(() => {
+      if (!cancelled) {
+        setUser((prev) => prev || { uid: "local-guest", isAnonymous: true });
+        setAuthReady(true);
+      }
+    }, 2200);
+
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (cancelled) return;
       if (!u) {
-        await ensureSignedIn();
-        return; // onAuthStateChanged will fire again with the anon/restored user
+        try {
+          await ensureSignedIn();
+        } catch (err) {
+          console.warn("Anonymous auth fallback to local guest:", err);
+          if (!cancelled) {
+            clearTimeout(fallbackTimer);
+            setUser({ uid: "local-guest", isAnonymous: true });
+            setAuthReady(true);
+          }
+        }
+        return;
       }
+      clearTimeout(fallbackTimer);
       setUser(u);
       setAuthReady(true);
     });
 
-    // Finish a signInWithGoogle() redirect, if we're arriving back from one.
-    // The listener above handles the resulting auth state change on its own;
-    // this just surfaces a toast once we know how it went.
     consumeRedirectResult()
       .then((res) => {
         if (cancelled || !res) return;
@@ -150,18 +253,19 @@ export default function App() {
         if (!cancelled) addToast("Sign-in failed, try again", "danger");
       });
 
-    return () => { cancelled = true; unsub(); };
+    return () => {
+      cancelled = true;
+      clearTimeout(fallbackTimer);
+      unsub();
+    };
   }, [addToast]);
 
-  /* ---- Load this uid's data whenever the signed-in user changes
-     (first load, Google sign-in, or sign-out back to a fresh anon uid) ---- */
+  /* ---- Load this uid's data whenever the signed-in user changes ---- */
   useEffect(() => {
     if (!authReady || !user) return;
     setLoaded(false);
     (async () => {
       const saved = await loadState(user.uid);
-      // Reset to defaults first so switching accounts never leaks the
-      // previous user's templates/words into the new session.
       setMessages(saved?.messages || []);
       setTemplates(saved?.templates || SEED_TEMPLATES);
       setActivity(saved?.activity || []);
@@ -179,18 +283,7 @@ export default function App() {
     saveState(user.uid, { messages, templates, activity, settings, theme, customWords, disabledBuiltinWords });
   }, [loaded, user, messages, templates, activity, settings, theme, customWords, disabledBuiltinWords]);
 
-  /* ---- Account actions (Google sign-in / sign-out) ----
-     handleSignIn tries a popup first, which resolves right here with a
-     result. If the browser forces a redirect fallback instead, this
-     resolves with null (the page is about to navigate away) and the
-     outcome is reported later by the boot effect above via
-     consumeRedirectResult(). */
   const handleSignIn = useCallback(async () => {
-    // A hard-blocking privacy tool (Brave Shields, an ad-blocker, or a
-    // browser set to block third-party cookies) can make the Google popup
-    // hang open blank with no error ever thrown — the click just seems to
-    // do nothing. This timeout turns that silence into an actionable hint
-    // instead of leaving the person stuck with no explanation.
     let settled = false;
     const hintTimer = setTimeout(() => {
       if (!settled) {
@@ -228,10 +321,8 @@ export default function App() {
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
 
-  /* ---- Combined word list (built-in minus disabled, plus custom) used for every scan ---- */
   const wordList = useMemo(() => buildWordList(disabledBuiltinWords, customWords), [disabledBuiltinWords, customWords]);
 
-  /* ---- Dynamic category list: the fixed defaults plus any custom category already in use ---- */
   const allCategories = useMemo(() => {
     const set = new Set(CATEGORIES);
     messages.forEach((m) => m.category && set.add(m.category));
@@ -241,7 +332,6 @@ export default function App() {
 
   const scan = useMemo(() => scanMessage(text, wordList), [text, wordList]);
 
-  /* ---- Checker actions ---- */
   const startNewCheck = () => {
     setPage("checker");
     setTimeout(() => textareaRef.current?.focus(), 50);
@@ -492,6 +582,7 @@ export default function App() {
         page={page} setPage={setPage} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}
         theme={theme} toggleTheme={toggleTheme} onOpenPalette={() => setPaletteOpen(true)}
         user={user} onSignIn={handleSignIn} onSignOut={handleSignOut}
+        typingStats={typingStats}
       />
 
       <main className="main-area">
@@ -501,7 +592,14 @@ export default function App() {
         </div>
 
         {page === "dashboard" && (
-          <Dashboard messages={messages} templates={templates} activity={activity} setPage={setPage} startNewCheck={startNewCheck} />
+          <Dashboard
+            messages={messages}
+            templates={templates}
+            activity={activity}
+            setPage={setPage}
+            startNewCheck={startNewCheck}
+            typingStats={typingStats}
+          />
         )}
 
         {page === "checker" && (
@@ -509,6 +607,10 @@ export default function App() {
             text={text} setText={setText} category={category} setCategory={setCategory} categories={allCategories}
             scan={scan} onSave={() => setSaveModalOpen(true)} onOpenInsert={() => setInsertOpen(true)}
             addToast={addToast} textareaRef={textareaRef}
+            typingStats={typingStats}
+            onTogglePause={handleTogglePause}
+            onResetTimer={handleResetTimer}
+            onTextTyped={handleTextTyped}
           />
         )}
 

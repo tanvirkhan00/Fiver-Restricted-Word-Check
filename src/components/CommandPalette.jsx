@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Search,
   Files,
-  ChevronRight,
-  Command
+  ChevronRight
 } from "lucide-react";
 import { NAV_ITEMS } from "../data/navItems";
 

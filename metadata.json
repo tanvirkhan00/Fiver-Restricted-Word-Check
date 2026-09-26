@@ -1,0 +1,6 @@
+{
+  "name": "Fiverr Message Safety Checker",
+  "description": "Analyze Fiverr messages for restricted words, policy violations, and live typing speed (WPM) with a real-time clock counter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,22 +1,37 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  Tags,
   Search,
   Copy as CopyIcon,
   Trash2,
   Files,
   ShieldCheck,
   Save,
-  Wand2
+  Wand2,
+  Gauge,
+  Clock
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { TypingTelemetryBar } from "../components/LiveClock";
 import { Button, CategoryField, Modal, RiskGauge } from "../components/primitives";
-import { statusMeta } from "../lib/format";
+import { formatDuration, statusMeta } from "../lib/format";
 import { applyAllFixes, applyFix, buildHighlightHtml } from "../lib/scan";
 import { IssueCard } from "./Dashboard";
 
 export function MessageChecker({
-  text, setText, category, setCategory, categories, scan, onSave, onOpenInsert, addToast, textareaRef,
+  text,
+  setText,
+  category,
+  setCategory,
+  categories,
+  scan,
+  onSave,
+  onOpenInsert,
+  addToast,
+  textareaRef,
+  typingStats,
+  onTogglePause,
+  onResetTimer,
+  onTextTyped,
 }) {
   const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   const meta = statusMeta(scan.status);
@@ -28,7 +43,8 @@ export function MessageChecker({
   };
   const handleClear = () => {
     setText("");
-    addToast("Message cleared.");
+    if (onResetTimer) onResetTimer();
+    addToast("Message and timer cleared.");
   };
   const handleFixOne = (item) => {
     setText((prev) => applyFix(prev, item));
@@ -43,7 +59,7 @@ export function MessageChecker({
     <div className="page-body">
       <PageHeader
         title="Message Checker"
-        subtitle="Analyze your Fiverr messages before sending them."
+        subtitle="Analyze your Fiverr messages before sending them — with live clock & WPM calculation."
         onMenu={() => {}}
         right={
           <div className="badge-live">
@@ -52,12 +68,34 @@ export function MessageChecker({
         }
       />
 
+      {typingStats && (
+        <TypingTelemetryBar
+          words={words}
+          chars={text.length}
+          typingStats={typingStats}
+          onTogglePause={onTogglePause}
+          onResetTimer={onResetTimer}
+        />
+      )}
+
       <div className="checker-grid">
         {/* LEFT: composer */}
         <div className="card composer-card">
           <div className="card-head">
             <span className="card-label">Message Composer</span>
-            <span className="char-meta">{text.length} chars</span>
+            <div className="composer-head-metrics">
+              {typingStats && (
+                <>
+                  <span className="char-meta composer-metric-chip">
+                    <Clock size={11} /> {formatDuration(typingStats.activeMs)}
+                  </span>
+                  <span className="char-meta composer-metric-chip composer-metric-accent">
+                    <Gauge size={11} /> {typingStats.wpm} WPM
+                  </span>
+                </>
+              )}
+              <span className="char-meta">{text.length} chars</span>
+            </div>
           </div>
 
           <div className="composer-toolbar">
@@ -82,13 +120,27 @@ export function MessageChecker({
             ref={textareaRef}
             className="composer-textarea"
             value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Paste or type your Fiverr message here to scan for policy violations and risky content..."
+            onChange={(e) => {
+              const nextVal = e.target.value;
+              setText(nextVal);
+              if (onTextTyped) onTextTyped(nextVal);
+            }}
+            placeholder="Paste or type your Fiverr message here to scan for policy violations and track live typing speed (WPM)..."
             aria-label="Message content"
           />
 
           <div className="composer-footer">
-            <span className="char-meta">{words} words</span>
+            <div className="composer-footer-stats">
+              <span className="char-meta">{words} words</span>
+              {typingStats && (
+                <>
+                  <span className="char-meta-sep">·</span>
+                  <span className="char-meta">{typingStats.wpm} words/min</span>
+                  <span className="char-meta-sep">·</span>
+                  <span className="char-meta">{typingStats.cpm} chars/min</span>
+                </>
+              )}
+            </div>
             <div className="composer-actions">
               <Button tone="ghost" icon={Trash2} onClick={handleClear}>Clear</Button>
               <Button tone="secondary" icon={CopyIcon} onClick={handleCopy}>Copy</Button>
@@ -161,9 +213,6 @@ export function MessageChecker({
   );
 }
 
-/* ======================================================================
-   SAVE MESSAGE MODAL
-====================================================================== */
 export function SaveMessageModal({ open, onClose, defaultContent, defaultCategory, categories, onConfirm }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState(defaultCategory || "General");
@@ -214,7 +263,3 @@ export function SaveMessageModal({ open, onClose, defaultContent, defaultCategor
     </Modal>
   );
 }
-
-/* ======================================================================
-   TEMPLATE EDITOR MODAL
-====================================================================== */

@@ -7,7 +7,6 @@ import {
   Files,
   Ban
 } from "lucide-react";
-import { Dashboard } from "../pages/Dashboard";
 
 export const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },

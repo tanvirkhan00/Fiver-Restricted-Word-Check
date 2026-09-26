@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import {
-  Tags,
   Search,
   Plus,
   Copy as CopyIcon,
@@ -96,9 +95,6 @@ export function TemplateModal({ open, onClose, initial, categories, wordList, on
   );
 }
 
-/* ======================================================================
-   TEMPLATES PAGE
-====================================================================== */
 export function TemplateCard({ tpl, onUse, onEdit, onDuplicate, onDelete, onCopy, onTogglePin }) {
   const meta = statusMeta(tpl.riskStatus || "safe");
   return (
@@ -196,9 +192,6 @@ export function TemplatesPage({ templates, categories, onUse, onCreate, onEdit, 
   );
 }
 
-/* ======================================================================
-   INSERT TEMPLATE MODAL
-====================================================================== */
 export function InsertTemplateModal({ open, onClose, templates, onInsert }) {
   const [query, setQuery] = useState("");
   useEffect(() => { if (open) setQuery(""); }, [open]);
@@ -233,7 +226,3 @@ export function InsertTemplateModal({ open, onClose, templates, onInsert }) {
     </Modal>
   );
 }
-
-/* ======================================================================
-   SAVED MESSAGES PAGE
-====================================================================== */

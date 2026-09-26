@@ -15,10 +15,6 @@ export const firebaseApp = initializeApp(firebaseConfig);
 export const db = getFirestore(firebaseApp);
 export const auth = getAuth(firebaseApp);
 export const googleProvider = new GoogleAuthProvider();
-// Always show Google's account chooser instead of silently reusing whichever
-// Google account happens to be signed into the browser — without this,
-// Chrome auto-picks that account with no way for the person to pick a
-// different one or confirm.
 googleProvider.setCustomParameters({ prompt: "select_account" });
 
 export const INACTIVITY_DAYS = 30;
