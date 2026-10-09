@@ -1013,6 +1013,331 @@ export const CSS = `
 .insert-item { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; margin-bottom: 6px; font-family: inherit; }
 .insert-item:hover { border-color: var(--accent); }
 
+/* DYNAMIC VARIABLE BAR */
+.var-shortcuts-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.var-bar-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.var-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.var-chip-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.var-chip-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+  border-color: var(--accent-border);
+}
+
+/* AUDIT CHECKLIST */
+.audit-body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.audit-meter-banner {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.audit-meter-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.audit-meter-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+.audit-meter-score {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.audit-meter-bar {
+  height: 5px;
+  background: var(--surface3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.audit-meter-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .25s ease;
+}
+.audit-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.audit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+}
+.audit-item-pass { border-color: rgba(16, 185, 129, 0.2); }
+.audit-item-fail { border-color: rgba(244, 63, 94, 0.25); background: rgba(244, 63, 94, 0.04); }
+.audit-item-pass .audit-icon { color: var(--safe); margin-top: 1px; }
+.audit-item-fail .audit-icon { color: var(--high); margin-top: 1px; }
+.audit-content { flex: 1; min-width: 0; }
+.audit-label { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.audit-desc { font-size: 11px; color: var(--text2); line-height: 1.35; }
+.audit-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.audit-tag-pass { background: var(--accent-soft); color: var(--accent); }
+.audit-tag-fail { background: var(--high-bg); color: var(--high); }
+.audit-length-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.audit-hint { font-size: 11px; color: var(--muted); line-height: 1.35; }
+
+/* TELEMETRY PASTE HINT */
+.t-paste-hint {
+  font-size: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--medium);
+  margin-top: 2px;
+}
+
+/* SPEED TRAINER STYLES */
+.trainer-scenario-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.trainer-tab-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trainer-tab-card:hover {
+  border-color: var(--border2);
+  background: var(--surface2);
+}
+.trainer-tab-active {
+  border-color: var(--accent) !important;
+  background: var(--surface2) !important;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.trainer-tab-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.trainer-tab-cat {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+}
+.trainer-level-tag {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--surface3);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.trainer-pb-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--hyphen);
+  background: var(--hyphen-bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.trainer-tab-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+.trainer-tab-meta {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.trainer-workbench {
+  display: flex;
+  flex-direction: column;
+}
+.trainer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.trainer-display {
+  padding: 20px 22px;
+  font-size: 17px;
+  line-height: 1.7;
+  letter-spacing: 0.2px;
+  cursor: text;
+  background: var(--surface);
+  user-select: none;
+  min-height: 130px;
+  border-bottom: 1px solid var(--border);
+}
+.trainer-char {
+  position: relative;
+  transition: color .08s ease;
+}
+.trainer-char-pending {
+  color: var(--muted);
+  opacity: 0.75;
+}
+.trainer-char-correct {
+  color: var(--safe);
+}
+.trainer-char-incorrect {
+  color: var(--high);
+  background: rgba(244, 63, 94, 0.2);
+  border-radius: 2px;
+}
+.trainer-char-cursor {
+  border-left: 2px solid var(--accent);
+  animation: blink 1s infinite;
+}
+.trainer-input-wrap {
+  padding: 14px 18px;
+  background: var(--surface2);
+}
+.trainer-textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14.5px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+.trainer-textarea:focus {
+  border-color: var(--accent);
+}
+.trainer-result-box {
+  padding: 18px 22px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.trainer-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.trainer-badge-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--safe);
+}
+.trainer-score-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.trainer-wpm-pill, .trainer-acc-pill, .trainer-time-pill {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+}
+.trainer-wpm-pill strong { color: var(--accent); font-size: 14px; }
+.trainer-acc-pill strong { color: var(--low); font-size: 14px; }
+.trainer-time-pill strong { color: var(--text); font-size: 14px; }
+.trainer-advice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text2);
+  line-height: 1.45;
+}
+.trainer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.btn-compact {
+  padding: 6px 10px !important;
+  font-size: 11.5px !important;
+}
+
 /* TOASTS */
 .toast-stack { position: fixed; bottom: 22px; right: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 1200; }
 .toast { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: toastIn .2s ease; }

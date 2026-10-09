@@ -14,16 +14,16 @@ import { auth } from "./firebase/config";
 import { loadState, saveState } from "./firebase/store";
 import { uid } from "./lib/format";
 import { buildWordList, scanMessage } from "./lib/scan";
+import { useTypingEngine } from "./lib/useTypingEngine";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { Dashboard } from "./pages/Dashboard";
 import { MessageChecker, SaveMessageModal } from "./pages/MessageChecker";
 import { RestrictedWordsPage } from "./pages/RestrictedWordsPage";
 import { EditMessageModal, SavedMessages } from "./pages/SavedMessages";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SpeedTrainerPage } from "./pages/SpeedTrainerPage";
 import { InsertTemplateModal, TemplateModal, TemplatesPage } from "./pages/TemplatesPage";
 import { CSS } from "./styles/appStyles";
-
-const IDLE_TIMEOUT_MS = 4500;
 
 export default function StandaloneApp() {
   const [authReady, setAuthReady] = useState(false);
@@ -44,107 +44,15 @@ export default function StandaloneApp() {
   const [category, setCategory] = useState("General");
   const textareaRef = useRef(null);
 
-  /* ---- Live Typing Clock Counter & WPM State ---- */
-  const [activeMs, setActiveMs] = useState(0);
-  const [isTyping, setIsTyping] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
-  const [peakWpm, setPeakWpm] = useState(0);
-  const lastKeystrokeRef = useRef(0);
-  const lastTickRef = useRef(0);
-
-  const handleTextTyped = useCallback((nextText) => {
-    const now = Date.now();
-    if (!nextText.trim()) {
-      setIsTyping(false);
-      return;
-    }
-    lastKeystrokeRef.current = now;
-    if (!hasStarted) {
-      setHasStarted(true);
-      lastTickRef.current = now;
-    }
-    if (isPaused) {
-      setIsPaused(false);
-      lastTickRef.current = now;
-    }
-    if (!isTyping) {
-      setIsTyping(true);
-      lastTickRef.current = now;
-    }
-  }, [hasStarted, isPaused, isTyping]);
-
-  useEffect(() => {
-    if (!hasStarted || isPaused) return;
-    lastTickRef.current = Date.now();
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const timeSinceLastKey = now - lastKeystrokeRef.current;
-      if (timeSinceLastKey <= IDLE_TIMEOUT_MS) {
-        const delta = Math.max(0, now - lastTickRef.current);
-        setActiveMs((prev) => prev + delta);
-        setIsTyping(true);
-      } else {
-        setIsTyping(false);
-      }
-      lastTickRef.current = now;
-    }, 250);
-    return () => clearInterval(interval);
-  }, [hasStarted, isPaused]);
-
-  const wordsCount = useMemo(
-    () => (text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0),
-    [text]
-  );
-
-  const { wpm, cpm } = useMemo(() => {
-    if (!hasStarted || wordsCount === 0) return { wpm: 0, cpm: 0 };
-    // Use at least 2.5 seconds denominator so the very first word doesn't spike artificially
-    const effectiveMinutes = Math.max(activeMs, 2500) / 60000;
-    const calcWpm = Math.round(wordsCount / effectiveMinutes);
-    const calcCpm = Math.round(text.length / effectiveMinutes);
-    return { wpm: calcWpm, cpm: calcCpm };
-  }, [hasStarted, wordsCount, activeMs, text.length]);
-
-  useEffect(() => {
-    if (activeMs >= 1500 && wpm > peakWpm) {
-      setPeakWpm(wpm);
-    }
-  }, [wpm, activeMs, peakWpm]);
-
-  const handleTogglePause = useCallback(() => {
-    if (!hasStarted) return;
-    setIsPaused((prev) => {
-      const next = !prev;
-      if (!next) {
-        const now = Date.now();
-        lastKeystrokeRef.current = now;
-        lastTickRef.current = now;
-        setIsTyping(true);
-      }
-      return next;
-    });
-  }, [hasStarted]);
-
-  const handleResetTimer = useCallback(() => {
-    setActiveMs(0);
-    setIsTyping(false);
-    setIsPaused(false);
-    setHasStarted(false);
-    setPeakWpm(0);
-    lastKeystrokeRef.current = 0;
-    lastTickRef.current = 0;
-  }, []);
-
-  const typingStats = useMemo(() => ({
-    activeMs,
-    wpm,
-    cpm,
-    peakWpm,
-    isTyping,
-    isPaused,
-    hasStarted,
-  }), [activeMs, wpm, cpm, peakWpm, isTyping, isPaused, hasStarted]);
+  /* ---- Accurate Standard Typing Speed & Stopwatch Engine ---- */
+  const {
+    typingStats,
+    recordKeyDown,
+    recordPaste,
+    recordTextChange,
+    togglePause: handleTogglePause,
+    resetTimer: handleResetTimer,
+  } = useTypingEngine();
 
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [templateModal, setTemplateModal] = useState({ open: false, initial: null });
@@ -333,6 +241,8 @@ export default function StandaloneApp() {
   const scan = useMemo(() => scanMessage(text, wordList), [text, wordList]);
 
   const startNewCheck = () => {
+    setText("");
+    handleResetTimer();
     setPage("checker");
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
@@ -383,6 +293,7 @@ export default function StandaloneApp() {
 
   const handleUseMessage = (m) => {
     setText(m.content);
+    recordPaste(m.content.length);
     setCategory(m.category);
     setPage("checker");
     setMessages((list) => list.map((x) => x.id === m.id ? { ...x, usageCount: (x.usageCount || 0) + 1 } : x));
@@ -436,6 +347,7 @@ export default function StandaloneApp() {
 
   const handleUseTemplate = (t) => {
     setText(t.content);
+    recordPaste(t.content.length);
     setCategory(t.category);
     setPage("checker");
     setTemplates((list) => list.map((x) => x.id === t.id ? { ...x, usageCount: (x.usageCount || 0) + 1 } : x));
@@ -445,6 +357,7 @@ export default function StandaloneApp() {
 
   const handleInsertTemplate = (t) => {
     setText((prev) => (prev ? `${prev}\n${t.content}` : t.content));
+    recordPaste(t.content.length);
     setCategory(t.category);
     setTemplates((list) => list.map((x) => x.id === t.id ? { ...x, usageCount: (x.usageCount || 0) + 1 } : x));
     setInsertOpen(false);
@@ -614,7 +527,22 @@ export default function StandaloneApp() {
             typingStats={typingStats}
             onTogglePause={handleTogglePause}
             onResetTimer={handleResetTimer}
-            onTextTyped={handleTextTyped}
+            recordKeyDown={recordKeyDown}
+            recordPaste={recordPaste}
+            recordTextChange={recordTextChange}
+          />
+        )}
+
+        {page === "trainer" && (
+          <SpeedTrainerPage
+            onTransferToChecker={(textToUse, catToUse) => {
+              setText(textToUse);
+              if (catToUse) setCategory(catToUse);
+              recordPaste(textToUse.length);
+              setPage("checker");
+              addToast("Loaded drill into Message Compliance Studio.");
+            }}
+            addToast={addToast}
           />
         )}
 

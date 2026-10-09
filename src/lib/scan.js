@@ -68,6 +68,114 @@ export function applyAllHyphens(text, found) {
   return next;
 }
 
+export function dotSeparateSingleToken(token) {
+  if (!token || token.includes(".")) return token;
+  if (token.length < 2) return token;
+  const mid = token.length === 3 ? 2 : Math.max(1, Math.floor(token.length / 2));
+  return `${token.slice(0, mid)}.${token.slice(mid)}`;
+}
+
+export function dotSeparatePhrase(phrase) {
+  if (!phrase) return "";
+  return phrase
+    .split(/(\s+)/)
+    .map((part) => (/^\s+$/.test(part) ? part : dotSeparateSingleToken(part)))
+    .join("");
+}
+
+export function applyDot(text, item) {
+  const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`\\b${escaped}\\b`, "gi");
+  return text.replace(regex, (matched) => dotSeparatePhrase(matched));
+}
+
+export function applyAllDots(text, found) {
+  let next = text;
+  [...found]
+    .sort((a, b) => b.word.length - a.word.length)
+    .forEach((item) => {
+      next = applyDot(next, item);
+    });
+  return next;
+}
+
+/**
+ * Reverts middle-hyphens and dot separations from previously obfuscated words
+ * so the user can easily undo or view clean original text.
+ */
+export function revertHyphensAndDots(text) {
+  if (!text) return "";
+  // Remove intra-word hyphens: letters-hyphen-letters (not markdown lists or em-dashes)
+  let clean = text.replace(/([a-zA-Z0-9])-([a-zA-Z0-9])/g, "$1$2");
+  // Remove intra-word dots that aren't domain extensions or numbers
+  clean = clean.replace(/([a-zA-Z])\.([a-zA-Z]{3,})/g, "$1$2");
+  return clean;
+}
+
+export function auditFiverrCompliance(text, scanResult) {
+  const t = text || "";
+  const trimmed = t.trim();
+  const foundCount = scanResult?.found?.length || 0;
+
+  const hasRestricted = foundCount > 0;
+  const hasPhoneOrEmail = /((\+?\d{1,4}[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b)/.test(t);
+  const hasExternalContact = /\b(whatsapp|telegram|skype|zoom|wechat|viber|call me|direct call|phone number)\b/i.test(t);
+  const hasOffPlatformPay = /\b(paypal|bkash|nagad|bank transfer|wire transfer|pay outside|pay me directly|bitcoin|crypto|usdt)\b/i.test(t);
+  const hasReviewAsking = /\b(5 star|five star|positive review|leave a review|give me a review|rate me|5-star|feedback for feedback)\b/i.test(t);
+  const hasGreeting = /^(hi|hello|hey|dear|greetings|good morning|good afternoon|good evening|thanks|thank you)\b/i.test(trimmed);
+  const hasClosing = /\b(regards|best regards|thanks|thank you|sincerely|cheers|looking forward|warm regards)[,.!\s]*$/i.test(trimmed);
+
+  const checks = [
+    {
+      id: "restricted",
+      label: "Zero Restricted Terms",
+      desc: hasRestricted ? `${foundCount} flagged terms detected` : "All 184 Fiverr policy terms clear",
+      passed: !hasRestricted,
+      severity: "high",
+    },
+    {
+      id: "contact",
+      label: "No Direct Contact Info",
+      desc: (hasPhoneOrEmail || hasExternalContact) ? "External contact or phone/email detected" : "No off-platform contact sharing",
+      passed: !hasPhoneOrEmail && !hasExternalContact,
+      severity: "high",
+    },
+    {
+      id: "payment",
+      label: "Platform Payment Protected",
+      desc: hasOffPlatformPay ? "Off-Fiverr payment keywords found" : "All transactions remain on Fiverr",
+      passed: !hasOffPlatformPay,
+      severity: "high",
+    },
+    {
+      id: "reviews",
+      label: "Review Policy Compliant",
+      desc: hasReviewAsking ? "Review / rating manipulation detected" : "No review solicitation terms",
+      passed: !hasReviewAsking,
+      severity: "high",
+    },
+    {
+      id: "polite",
+      label: "Professional Salutation & Closing",
+      desc: (hasGreeting && hasClosing) ? "Polite greeting and signoff included" : "Missing greeting or closing signoff",
+      passed: hasGreeting && hasClosing,
+      severity: "low",
+    },
+  ];
+
+  const totalChecks = checks.length;
+  const passedChecks = checks.filter((c) => c.passed).length;
+  const auditScore = Math.round((passedChecks / totalChecks) * 100);
+
+  return {
+    checks,
+    passedChecks,
+    totalChecks,
+    auditScore,
+    isFullyCompliant: passedChecks === totalChecks,
+  };
+}
+
 export function applyFix(text, item) {
   const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`\\b${escaped}\\b`, "gi");

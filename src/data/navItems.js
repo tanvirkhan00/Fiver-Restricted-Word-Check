@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   MessageSquareText,
+  Zap,
   BookmarkCheck,
   Tags,
   Settings as SettingsIcon,
@@ -11,6 +12,7 @@ import {
 export const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "checker", label: "Message Checker", icon: MessageSquareText },
+  { id: "trainer", label: "Speed Trainer", icon: Zap },
   { id: "templates", label: "Message Templates", icon: Files },
   { id: "saved", label: "Saved Messages", icon: BookmarkCheck },
   { id: "words", label: "Restricted Words", icon: Ban },

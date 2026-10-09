@@ -89,11 +89,17 @@ export function TypingTelemetryBar({
   const {
     activeMs,
     wpm,
+    liveWpm = 0,
+    avgWpm = 0,
     cpm,
     peakWpm,
+    typedKeystrokes = 0,
+    pastedChars = 0,
+    accuracy = 100,
     isTyping,
     isPaused,
     hasStarted,
+    recentPasteNotice,
   } = typingStats;
 
   const tier = getWpmTier(wpm);
@@ -106,7 +112,7 @@ export function TypingTelemetryBar({
       statusLabel = "Paused";
       statusDotClass = "timer-dot-paused";
     } else if (isTyping) {
-      statusLabel = "Recording";
+      statusLabel = "Typing";
       statusDotClass = "timer-dot-active";
     } else {
       statusLabel = "Idle";
@@ -168,8 +174,12 @@ export function TypingTelemetryBar({
             <span className={`t-tier t-tier-${tier.tone}`}>{tier.label}</span>
           </div>
           <div className="t-value-row">
-            <span className="t-value mono">{wpm} <small>WPM</small></span>
-            <span className="t-sub mono">Peak {peakWpm}</span>
+            <span className="t-value mono">
+              {wpm} <small>WPM</small>
+            </span>
+            <span className="t-sub mono" title={`Session Avg: ${avgWpm} WPM · Peak: ${peakWpm} WPM`}>
+              Avg {avgWpm} · Peak {peakWpm}
+            </span>
           </div>
           <div className="t-meter">
             <div
@@ -182,20 +192,29 @@ export function TypingTelemetryBar({
 
       <div className="t-divider" />
 
-      {/* 3. Characters Per Minute & Volume */}
+      {/* 3. Accuracy & Keystrokes */}
       <div className="t-segment">
         <div className="t-segment-icon t-icon-medium">
           <Zap size={15} />
         </div>
         <div className="t-segment-main">
           <div className="t-label-row">
-            <span className="t-label">Keystroke Rate</span>
-            <span className="t-sub mono">{readTimeSec > 0 ? `~${readTimeSec}s read` : "0s read"}</span>
+            <span className="t-label">Keystrokes &amp; Acc</span>
+            <span className="t-sub mono">{accuracy}% Acc</span>
           </div>
           <div className="t-value-row">
-            <span className="t-value mono">{cpm} <small>CPM</small></span>
-            <span className="t-sub mono">{words}w · {chars}c</span>
+            <span className="t-value mono">
+              {cpm} <small>CPM</small>
+            </span>
+            <span className="t-sub mono">
+              {typedKeystrokes} keys · {readTimeSec > 0 ? `~${readTimeSec}s read` : "0s read"}
+            </span>
           </div>
+          {pastedChars > 0 && (
+            <div className="t-paste-hint" title="Pasted text is safely excluded from WPM to maintain accurate speed calculation">
+              📋 {pastedChars} chars pasted (excluded)
+            </div>
+          )}
         </div>
       </div>
     </div>

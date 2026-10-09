@@ -9,17 +9,38 @@ import {
   FlaskConical,
   Minus,
   Eye,
-  Columns
+  Columns,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
+  Sparkles,
+  Dot
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { TypingTelemetryBar } from "../components/LiveClock";
 import { Button, CategoryField, Modal } from "../components/primitives";
 import { statusMeta } from "../lib/format";
-import { applyAllHyphens, applyHyphen, buildHighlightHtml, hyphenatePhrase } from "../lib/scan";
+import {
+  applyAllHyphens,
+  applyHyphen,
+  applyAllDots,
+  revertHyphensAndDots,
+  auditFiverrCompliance,
+  buildHighlightHtml,
+  hyphenatePhrase
+} from "../lib/scan";
 import { IssueCard } from "./Dashboard";
 
 const SAMPLE_RISKY_MESSAGE =
   "Hi! Thanks for reaching out. Can we jump on a quick call on WhatsApp or Skype to discuss your project? You can also email me or send payment via PayPal, and please leave a positive review afterwards!";
+
+const DYNAMIC_VARIABLES = [
+  { tag: "{ClientName}", label: "Client Name" },
+  { tag: "{GigTitle}", label: "Gig Title" },
+  { tag: "{DeliveryDays}", label: "Delivery Days" },
+  { tag: "{OrderPrice}", label: "Order Price" },
+  { tag: "{RevisionLimit}", label: "Revisions" },
+];
 
 export function MessageChecker({
   text,
@@ -36,15 +57,28 @@ export function MessageChecker({
   onTogglePause,
   onResetTimer,
   onTextTyped,
+  recordKeyDown,
+  recordPaste,
+  recordTextChange,
 }) {
   const [viewMode, setViewMode] = useState("split"); // "split" | "inspector"
+  const [rightTab, setRightTab] = useState("issues"); // "issues" | "audit"
   const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
   const meta = statusMeta(scan.status);
   const highlightHtml = useMemo(() => buildHighlightHtml(text, scan.found), [text, scan.found]);
 
+  // Comprehensive Fiverr pre-send compliance audit
+  const audit = useMemo(() => auditFiverrCompliance(text, scan), [text, scan]);
+
   const handleCopy = () => {
     if (!text.trim()) return;
-    navigator.clipboard.writeText(text).then(() => addToast("Message copied to clipboard."));
+    navigator.clipboard.writeText(text).then(() => {
+      addToast(
+        audit.isFullyCompliant
+          ? "Copied! Message passed all 5 Fiverr compliance checks."
+          : "Message copied to clipboard."
+      );
+    });
   };
 
   const handleClear = () => {
@@ -66,10 +100,44 @@ export function MessageChecker({
     addToast(`Added middle hyphen (-) to ${count} conflict word${count === 1 ? "" : "s"}.`);
   };
 
+  const handleDotSeparateAll = () => {
+    if (scan.found.length === 0) return;
+    const count = scan.found.length;
+    setText((prev) => applyAllDots(prev, scan.found));
+    addToast(`Obfuscated ${count} term${count === 1 ? "" : "s"} with dot (.) separation.`);
+  };
+
+  const handleRevertObfuscations = () => {
+    setText((prev) => revertHyphensAndDots(prev));
+    addToast("Reverted obfuscation hyphens and dots to clean text.");
+  };
+
+  const handleInsertVariable = (tag) => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const before = text.slice(0, start);
+      const after = text.slice(end);
+      const nextText = `${before}${tag}${after}`;
+      setText(nextText);
+      if (recordPaste) recordPaste(tag.length); // Treat tag insert as paste so WPM isn't inflated
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+        textarea.focus();
+      }, 20);
+    } else {
+      setText((prev) => (prev ? `${prev} ${tag}` : tag));
+      if (recordPaste) recordPaste(tag.length);
+    }
+    addToast(`Inserted variable ${tag}`);
+  };
+
   const handleLoadSample = () => {
     setText(SAMPLE_RISKY_MESSAGE);
+    if (recordPaste) recordPaste(SAMPLE_RISKY_MESSAGE.length);
     if (onTextTyped) onTextTyped(SAMPLE_RISKY_MESSAGE);
-    addToast("Sample message loaded — try the Hyphenate (-) feature!");
+    addToast("Sample message loaded — try Hyphenate (-) or Dot (.)!");
   };
 
   const safetyScore = Math.max(0, 100 - scan.score);
@@ -78,7 +146,7 @@ export function MessageChecker({
     <div className="page-body">
       <PageHeader
         title="Message Compliance Studio"
-        subtitle="Scan Fiverr messages for restricted words, hyphenate conflict terms (-), and monitor live typing speed."
+        subtitle="Scan Fiverr messages for restricted words, obfuscate conflict terms (- / .), and monitor live typing speed."
         onMenu={() => {}}
         right={
           <div className="badge-live">
@@ -155,13 +223,40 @@ export function MessageChecker({
               </div>
             </div>
 
+            {/* DYNAMIC VARIABLE SHORTCUTS BAR */}
+            <div className="var-shortcuts-bar">
+              <span className="var-bar-title">Insert Variable:</span>
+              <div className="var-chips">
+                {DYNAMIC_VARIABLES.map((v) => (
+                  <button
+                    key={v.tag}
+                    type="button"
+                    className="var-chip-btn"
+                    onClick={() => handleInsertVariable(v.tag)}
+                    title={`Click to insert ${v.tag} at cursor`}
+                  >
+                    + {v.tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <textarea
               ref={textareaRef}
               className="composer-textarea"
               value={text}
+              onKeyDown={(e) => {
+                if (recordKeyDown) recordKeyDown(e);
+              }}
+              onPaste={(e) => {
+                const pasted = e.clipboardData?.getData("text") || "";
+                if (recordPaste) recordPaste(pasted.length);
+              }}
               onChange={(e) => {
+                const prevVal = text;
                 const nextVal = e.target.value;
                 setText(nextVal);
+                if (recordTextChange) recordTextChange(prevVal, nextVal);
                 if (onTextTyped) onTextTyped(nextVal);
               }}
               placeholder="Write or paste your Fiverr message here... Conflict words will be detected automatically and can be hyphenated (e.g. pay-ment, em-ail, ca-ll) in one click."
@@ -172,7 +267,7 @@ export function MessageChecker({
               <div className="composer-footer-stats">
                 <span className="char-meta">{words} words</span>
                 <span className="char-meta-sep">·</span>
-                <span className="char-meta">{text.length} chars</span>
+                <span className="char-meta">{text.length} / 2500 chars</span>
                 <span className="char-meta-sep">·</span>
                 <span className="char-meta" style={{ color: meta.color }}>
                   {scan.found.length === 0 ? "0 conflicts" : `${scan.found.length} conflict word${scan.found.length === 1 ? "" : "s"}`}
@@ -188,13 +283,34 @@ export function MessageChecker({
                   Clear
                 </Button>
                 {scan.found.length > 0 && (
-                  <Button
-                    tone="hyphen"
-                    icon={Minus}
-                    onClick={handleHyphenateAll}
+                  <>
+                    <Button
+                      tone="hyphen"
+                      icon={Minus}
+                      onClick={handleHyphenateAll}
+                      title="Add a hyphen (-) to all detected conflict words"
+                    >
+                      Hyphenate (-)
+                    </Button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-compact"
+                      onClick={handleDotSeparateAll}
+                      title="Obfuscate with dot (.): e.g. pay.ment"
+                    >
+                      <Dot size={14} /> Dot (.)
+                    </button>
+                  </>
+                )}
+                {text.includes("-") && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-compact"
+                    onClick={handleRevertObfuscations}
+                    title="Remove middle hyphens and dots to restore original text"
                   >
-                    Hyphenate All ({scan.found.length})
-                  </Button>
+                    <RotateCcw size={12} /> Clean
+                  </button>
                 )}
                 <Button
                   tone="secondary"
@@ -236,7 +352,7 @@ export function MessageChecker({
           )}
         </div>
 
-        {/* RIGHT WORKBENCH: COMPLIANCE METER + CONFLICT WORDS HYPHENATOR */}
+        {/* RIGHT WORKBENCH: COMPLIANCE METER + AUDIT CHECKLIST + CONFLICT WORDS */}
         <div className="analysis-col">
           <div className="card status-card">
             <div className="status-compact-top">
@@ -278,41 +394,115 @@ export function MessageChecker({
             </div>
           </div>
 
+          {/* TAB SWITCHER: CONFLICT WORDS vs 5-POINT PRE-SEND AUDIT */}
           <div className="card issues-card">
             <div className="card-head">
-              <span className="card-label">Conflict Words ({scan.found.length})</span>
-              {scan.found.length > 0 && (
+              <div className="toolbar-group">
+                <button
+                  type="button"
+                  className={`view-tab${rightTab === "issues" ? " view-tab-active" : ""}`}
+                  onClick={() => setRightTab("issues")}
+                >
+                  Conflict Words ({scan.found.length})
+                </button>
+                <button
+                  type="button"
+                  className={`view-tab${rightTab === "audit" ? " view-tab-active" : ""}`}
+                  onClick={() => setRightTab("audit")}
+                >
+                  Fiverr Audit ({audit.passedChecks}/{audit.totalChecks})
+                </button>
+              </div>
+              {rightTab === "issues" && scan.found.length > 0 && (
                 <button
                   type="button"
                   className="hyphen-all-btn"
                   onClick={handleHyphenateAll}
                   title="Add a hyphen (-) in the middle of all detected conflict words"
                 >
-                  <Minus size={12} /> Hyphenate All (-)
+                  <Minus size={12} /> Hyphenate All
                 </button>
               )}
             </div>
-            <div className="issues-body">
-              {scan.found.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">{text ? <ShieldCheck size={28} /> : <Search size={28} />}</div>
-                  <h4>{text ? "Message is Safe & Compliant" : "No Conflict Words"}</h4>
-                  <p>
-                    {text
-                      ? "No restricted words found. You can safely copy and send this message."
-                      : "Start typing in the composer to detect restricted words and hyphenate them."}
-                  </p>
+
+            {rightTab === "issues" ? (
+              <div className="issues-body">
+                {scan.found.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">{text ? <ShieldCheck size={28} /> : <Search size={28} />}</div>
+                    <h4>{text ? "Message is Safe & Compliant" : "No Conflict Words"}</h4>
+                    <p>
+                      {text
+                        ? "No restricted words found. You can safely copy and send this message."
+                        : "Start typing in the composer to detect restricted words and hyphenate them."}
+                    </p>
+                  </div>
+                ) : (
+                  scan.found.map((item) => (
+                    <IssueCard
+                      key={item.word}
+                      item={item}
+                      onHyphenate={handleHyphenateOne}
+                    />
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="audit-body">
+                <div className="audit-meter-banner">
+                  <div className="audit-meter-info">
+                    <span className="audit-meter-title">Pre-Send Compliance Audit</span>
+                    <span className="audit-meter-score mono">{audit.auditScore}% Passed</span>
+                  </div>
+                  <div className="audit-meter-bar">
+                    <div
+                      className="audit-meter-fill"
+                      style={{
+                        width: `${audit.auditScore}%`,
+                        background: audit.isFullyCompliant ? "var(--safe)" : "var(--medium)",
+                      }}
+                    />
+                  </div>
                 </div>
-              ) : (
-                scan.found.map((item) => (
-                  <IssueCard
-                    key={item.word}
-                    item={item}
-                    onHyphenate={handleHyphenateOne}
-                  />
-                ))
-              )}
-            </div>
+
+                <div className="audit-checklist">
+                  {audit.checks.map((c) => (
+                    <div key={c.id} className={`audit-item audit-item-${c.passed ? "pass" : "fail"}`}>
+                      <div className="audit-icon">
+                        {c.passed ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
+                      </div>
+                      <div className="audit-content">
+                        <div className="audit-label">{c.label}</div>
+                        <div className="audit-desc">{c.desc}</div>
+                      </div>
+                      <span className={`audit-tag mono ${c.passed ? "audit-tag-pass" : "audit-tag-fail"}`}>
+                        {c.passed ? "CLEAR" : "CHECK"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="audit-length-box">
+                  <div className="t-label-row">
+                    <span className="t-label">Fiverr Message Length</span>
+                    <span className="t-sub mono">{text.length} / 2500 chars</span>
+                  </div>
+                  <div className="t-meter">
+                    <div
+                      className="t-meter-fill"
+                      style={{ width: `${Math.min(100, (text.length / 2500) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="audit-hint">
+                    {text.length === 0
+                      ? "Fiverr maximum message length is 2,500 characters."
+                      : text.length <= 800
+                      ? "✓ Optimal length: concise messages have 35% higher response rate on Fiverr."
+                      : "Tip: For very long messages, consider organizing into bullet points."}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -370,3 +560,4 @@ export function SaveMessageModal({ open, onClose, defaultContent, defaultCategor
     </Modal>
   );
 }
+
