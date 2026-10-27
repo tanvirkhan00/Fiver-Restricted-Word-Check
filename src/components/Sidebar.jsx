@@ -9,6 +9,7 @@ import {
   Command
 } from "lucide-react";
 import { NAV_ITEMS } from "../data/navItems";
+import { BrandLogo } from "./BrandLogo";
 
 export function Sidebar({
   page,
@@ -31,7 +32,7 @@ export function Sidebar({
       {mobileOpen && <div className="drawer-backdrop" onClick={() => setMobileOpen(false)} />}
       <aside className={`sidebar${mobileOpen ? " sidebar-open" : ""}`}>
         <div className="sidebar-brand">
-          <div className="brand-shield"><Shield size={19} /></div>
+          <BrandLogo size={36} />
           <div className="brand-text">
             <h1>Fiverr Safety</h1>
             <p>COMPLIANCE SUITE</p>
@@ -77,8 +78,8 @@ export function Sidebar({
               ? <img className="avatar avatar-img" src={user.photoURL || user.providerData[0].photoURL} alt="" referrerPolicy="no-referrer" />
               : <div className="avatar">{isGuest ? "G" : initials}</div>}
             <div className="profile-meta">
-              <span className="profile-name">{isGuest ? "Local Workspace" : (user.displayName || user.email)}</span>
-              <span className="profile-role">{isGuest ? "Offline storage active" : "Synced with Google"}</span>
+              <span className="profile-name">{isGuest ? (user?.isAnonymous ? "Cloud Guest" : "Local Workspace") : (user.displayName || user.email)}</span>
+              <span className="profile-role">{!user || user.uid === "local-guest" ? "Offline storage active" : user.isAnonymous ? "Cloud storage active" : "Synced with Google"}</span>
             </div>
             <button className="icon-btn icon-btn-ghost" onClick={() => setPage("settings")} aria-label="Settings">
               <SettingsIcon size={14} />

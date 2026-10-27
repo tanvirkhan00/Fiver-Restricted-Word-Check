@@ -567,6 +567,10 @@ export const CSS = `
   display: flex;
   align-items: center;
   gap: 13px;
+  transition: border-color .15s, transform .15s;
+}
+.stat-card:hover {
+  border-color: var(--border2);
 }
 .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .stat-icon-accent { background: var(--accent-soft); color: var(--accent); }
@@ -574,7 +578,74 @@ export const CSS = `
 .stat-icon-high { background: var(--high-bg); color: var(--high); }
 .stat-icon-medium { background: var(--medium-bg); color: var(--medium); }
 .stat-value { display: block; font-size: 21px; font-weight: 700; line-height: 1.1; }
-.stat-label { display: block; font-size: 11.5px; color: var(--text2); margin-top: 3px; }
+.stat-label { display: block; font-size: 11.5px; color: var(--text2); margin-top: 3px; font-weight: 500; }
+.stat-sub { display: block; font-size: 10.5px; color: var(--muted); margin-top: 3px; font-family: 'JetBrains Mono', monospace; }
+
+/* SECONDARY COUNTERS STRIP */
+.dash-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.sec-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sec-card-left { display: flex; flex-direction: column; gap: 2px; }
+.sec-card-label { font-size: 10.5px; font-weight: 600; color: var(--text2); }
+.sec-card-sub { font-size: 9.5px; color: var(--muted); }
+.sec-card-val { font-size: 16px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+
+/* DASHBOARD TABS */
+.dash-tab-group {
+  display: inline-flex;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+.dash-tab-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 4px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .15s;
+}
+.dash-tab-btn-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.scan-source-pill {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--surface3);
+  color: var(--muted);
+}
+.scan-excerpt {
+  font-size: 12.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
 
 /* QUICK ACTIONS */
 .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
@@ -1342,6 +1413,7 @@ export const CSS = `
 .toast-stack { position: fixed; bottom: 22px; right: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 1200; }
 .toast { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border2); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: toastIn .2s ease; }
 .toast-danger { border-color: var(--high-border); color: var(--high); }
+.toast-warning { border-color: var(--medium-border); color: var(--medium); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* RESPONSIVE */
@@ -1354,6 +1426,7 @@ export const CSS = `
   .checker-grid { grid-template-columns: 1fr; }
   .dash-columns { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
+  .dash-secondary-grid { grid-template-columns: 1fr 1fr; }
   .quick-actions { grid-template-columns: 1fr; }
 }
 @media (max-width: 800px) {
@@ -1374,6 +1447,7 @@ export const CSS = `
 @media (max-width: 540px) {
   .dash-typing-body { grid-template-columns: 1fr; }
   .stat-grid { grid-template-columns: 1fr; }
+  .dash-secondary-grid { grid-template-columns: 1fr; }
   .clock-cluster { width: 100%; justify-content: space-between; }
 }
 html, body, #root { height: 100%; }

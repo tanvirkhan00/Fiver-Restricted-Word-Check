@@ -60,6 +60,10 @@ export function MessageChecker({
   recordKeyDown,
   recordPaste,
   recordTextChange,
+  onRegisterScan,
+  onRecordPaste,
+  onRecordCopy,
+  onRecordObfuscate,
 }) {
   const [viewMode, setViewMode] = useState("split"); // "split" | "inspector"
   const [rightTab, setRightTab] = useState("issues"); // "issues" | "audit"
@@ -70,9 +74,22 @@ export function MessageChecker({
   // Comprehensive Fiverr pre-send compliance audit
   const audit = useMemo(() => auditFiverrCompliance(text, scan), [text, scan]);
 
+  // Debounce typing to register scan once user pauses or text stabilizes
+  useEffect(() => {
+    const trimmed = text.trim();
+    if (!trimmed || trimmed.length < 5) return;
+    const timer = setTimeout(() => {
+      if (onRegisterScan) {
+        onRegisterScan(trimmed, scan, "typed");
+      }
+    }, 1100);
+    return () => clearTimeout(timer);
+  }, [text, scan, onRegisterScan]);
+
   const handleCopy = () => {
     if (!text.trim()) return;
     navigator.clipboard.writeText(text).then(() => {
+      if (onRecordCopy) onRecordCopy(text, scan);
       addToast(
         audit.isFullyCompliant
           ? "Copied! Message passed all 5 Fiverr compliance checks."
@@ -90,6 +107,7 @@ export function MessageChecker({
   const handleHyphenateOne = (item) => {
     const hyphenated = hyphenatePhrase(item.word);
     setText((prev) => applyHyphen(prev, item));
+    if (onRecordObfuscate) onRecordObfuscate(1, "hyphen");
     addToast(`Hyphenated "${item.word}" → "${hyphenated}"`);
   };
 
@@ -97,6 +115,7 @@ export function MessageChecker({
     if (scan.found.length === 0) return;
     const count = scan.found.length;
     setText((prev) => applyAllHyphens(prev, scan.found));
+    if (onRecordObfuscate) onRecordObfuscate(count, "hyphen");
     addToast(`Added middle hyphen (-) to ${count} conflict word${count === 1 ? "" : "s"}.`);
   };
 
@@ -104,6 +123,7 @@ export function MessageChecker({
     if (scan.found.length === 0) return;
     const count = scan.found.length;
     setText((prev) => applyAllDots(prev, scan.found));
+    if (onRecordObfuscate) onRecordObfuscate(count, "dot");
     addToast(`Obfuscated ${count} term${count === 1 ? "" : "s"} with dot (.) separation.`);
   };
 
@@ -137,6 +157,7 @@ export function MessageChecker({
     setText(SAMPLE_RISKY_MESSAGE);
     if (recordPaste) recordPaste(SAMPLE_RISKY_MESSAGE.length);
     if (onTextTyped) onTextTyped(SAMPLE_RISKY_MESSAGE);
+    if (onRegisterScan) setTimeout(() => onRegisterScan(SAMPLE_RISKY_MESSAGE, scan, "sample"), 60);
     addToast("Sample message loaded — try Hyphenate (-) or Dot (.)!");
   };
 
@@ -251,6 +272,10 @@ export function MessageChecker({
               onPaste={(e) => {
                 const pasted = e.clipboardData?.getData("text") || "";
                 if (recordPaste) recordPaste(pasted.length);
+                if (onRecordPaste) onRecordPaste(pasted);
+                if (onRegisterScan && pasted.trim().length >= 4) {
+                  setTimeout(() => onRegisterScan(pasted, scan, "pasted"), 60);
+                }
               }}
               onChange={(e) => {
                 const prevVal = text;

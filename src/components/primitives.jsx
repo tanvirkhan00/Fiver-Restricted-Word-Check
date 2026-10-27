@@ -81,7 +81,7 @@ export function ToastStack({ toasts }) {
     <div className="toast-stack">
       {toasts.map((t) => (
         <div key={t.id} className={`toast toast-${t.tone}`}>
-          {t.tone === "danger" ? <AlertTriangle size={15} /> : <Check size={15} />}
+          {t.tone === "danger" || t.tone === "warning" ? <AlertTriangle size={15} /> : <Check size={15} />}
           <span>{t.message}</span>
         </div>
       ))}

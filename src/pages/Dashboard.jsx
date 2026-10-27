@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   MessageSquareText,
   BookmarkCheck,
@@ -14,49 +14,148 @@ import {
   TrendingUp,
   Gauge,
   Keyboard,
-  Minus
+  Minus,
+  Copy,
+  Sparkles,
+  ClipboardCheck,
+  FileText
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/primitives";
 import { formatDuration, statusMeta, timeAgo } from "../lib/format";
 import { hyphenatePhrase } from "../lib/scan";
 
-export function Dashboard({ messages, templates, activity, setPage, startNewCheck, typingStats }) {
-  const safeCount = messages.filter((m) => m.riskStatus === "safe").length;
-  const attentionCount = messages.filter((m) => m.riskStatus !== "safe").length;
+export function Dashboard({
+  messages = [],
+  templates = [],
+  activity = [],
+  metrics = {},
+  recentScans = [],
+  setPage,
+  startNewCheck,
+  typingStats,
+  onLoadScanToChecker,
+  onCopyText,
+}) {
+  const [activeTab, setActiveTab] = useState("scans"); // "scans" | "saved"
+
+  const safeSaved = messages.filter((m) => m.riskStatus === "safe").length;
+  const attentionSaved = messages.filter((m) => m.riskStatus !== "safe").length;
+
+  // Real live numbers that update whenever the user types, pastes, or checks messages
+  const totalChecked = Math.max(messages.length, (metrics.totalScans || 0) + (messages.length ? 0 : 0)) || (metrics.totalScans || 0);
+  const compliantTotal = (metrics.safeScans || 0) > 0 ? metrics.safeScans : safeSaved;
+  const flaggedTotal = (metrics.flaggedScans || 0) > 0 ? metrics.flaggedScans : attentionSaved;
+  const copiedTotal = metrics.copiedCount || 0;
 
   const stats = [
-    { label: "Messages Checked", value: messages.length, icon: MessageSquareText, tone: "accent" },
-    { label: "Compliant Messages", value: safeCount, icon: ShieldCheck, tone: "low" },
-    { label: "Flagged Drafts", value: attentionCount, icon: ShieldAlert, tone: "high" },
-    { label: "Saved Templates", value: templates.length, icon: Files, tone: "medium" },
+    {
+      label: "Messages Checked",
+      value: totalChecked,
+      sub: `${metrics.wordsChecked || 0} words analyzed`,
+      icon: MessageSquareText,
+      tone: "accent",
+    },
+    {
+      label: "Compliant Messages",
+      value: compliantTotal,
+      sub: totalChecked > 0 ? `${Math.round((compliantTotal / Math.max(1, totalChecked)) * 100)}% compliance rate` : "100% safe",
+      icon: ShieldCheck,
+      tone: "low",
+    },
+    {
+      label: "Flagged Drafts",
+      value: flaggedTotal,
+      sub: `${metrics.conflictsIntercepted || 0} conflicts intercepted`,
+      icon: ShieldAlert,
+      tone: "high",
+    },
+    {
+      label: "Copied for Fiverr",
+      value: copiedTotal,
+      sub: `${metrics.pastedCount || 0} pasted · ${metrics.hyphenatedCount || 0} obfuscated`,
+      icon: ClipboardCheck,
+      tone: "medium",
+    },
   ];
 
+  // 7-day health calculating from BOTH live scans and saved drafts
   const now = Date.now();
   const oneWeek = 7 * 86400000;
-  const thisWeek = messages.filter((m) => now - m.createdAt < oneWeek);
-  const lastWeek = messages.filter((m) => now - m.createdAt >= oneWeek && now - m.createdAt < oneWeek * 2);
+
+  const allRecentItems = [
+    ...recentScans.map((s) => ({ id: s.id, timestamp: s.timestamp, riskStatus: s.riskStatus })),
+    ...messages.map((m) => ({ id: m.id, timestamp: m.createdAt, riskStatus: m.riskStatus })),
+  ];
+
+  const thisWeek = allRecentItems.filter((m) => now - (m.timestamp || 0) < oneWeek);
+  const lastWeek = allRecentItems.filter(
+    (m) => now - (m.timestamp || 0) >= oneWeek && now - (m.timestamp || 0) < oneWeek * 2
+  );
   const thisWeekSafe = thisWeek.filter((m) => m.riskStatus === "safe").length;
   const thisWeekAttention = thisWeek.length - thisWeekSafe;
   const weekDelta = thisWeek.length - lastWeek.length;
   const safePct = thisWeek.length ? Math.round((thisWeekSafe / thisWeek.length) * 100) : 100;
 
-  const topTemplates = [...templates].filter((t) => t.usageCount > 0).sort((a, b) => b.usageCount - a.usageCount).slice(0, 3);
+  const topTemplates = [...templates]
+    .filter((t) => t.usageCount > 0)
+    .sort((a, b) => b.usageCount - a.usageCount)
+    .slice(0, 3);
 
   return (
     <div className="page-body">
-      <PageHeader title="Workspace Overview" subtitle="Monitor message compliance, templates, and live typing performance." onMenu={() => {}} />
+      <PageHeader
+        title="Workspace Overview"
+        subtitle="Monitor live message compliance, typing telemetry, and Fiverr safety audits."
+        onMenu={() => {}}
+      />
 
+      {/* PRIMARY 4 STAT CARDS */}
       <div className="stat-grid">
         {stats.map((s) => (
           <div className="stat-card" key={s.label}>
-            <div className={`stat-icon stat-icon-${s.tone}`}><s.icon size={18} /></div>
+            <div className={`stat-icon stat-icon-${s.tone}`}>
+              <s.icon size={18} />
+            </div>
             <div>
               <span className="stat-value mono">{s.value}</span>
               <span className="stat-label">{s.label}</span>
+              {s.sub && <span className="stat-sub">{s.sub}</span>}
             </div>
           </div>
         ))}
+      </div>
+
+      {/* SECONDARY REAL-TIME TELEMETRY STRIP */}
+      <div className="dash-secondary-grid">
+        <div className="sec-card">
+          <div className="sec-card-left">
+            <span className="sec-card-label">Pastes Checked</span>
+            <span className="sec-card-sub">Multi-char clipboard inputs</span>
+          </div>
+          <span className="sec-card-val">{metrics.pastedCount || 0}</span>
+        </div>
+        <div className="sec-card">
+          <div className="sec-card-left">
+            <span className="sec-card-label">Conflict Words Fixed</span>
+            <span className="sec-card-sub">Hyphen (-) &amp; Dot (.) terms</span>
+          </div>
+          <span className="sec-card-val">{metrics.hyphenatedCount || 0}</span>
+        </div>
+        <div className="sec-card">
+          <div className="sec-card-left">
+            <span className="sec-card-label">Saved Drafts</span>
+            <span className="sec-card-sub">Permanent messages archive</span>
+          </div>
+          <span className="sec-card-val">{messages.length}</span>
+        </div>
+        <div className="sec-card">
+          <div className="sec-card-left">
+            <span className="sec-card-label">Compliance Templates</span>
+            <span className="sec-card-sub">Reusable fast responses</span>
+          </div>
+          <span className="sec-card-val">{templates.length}</span>
+        </div>
       </div>
 
       <div className="quick-actions">
@@ -118,6 +217,7 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
         </div>
       )}
 
+      {/* 7-DAY COMPLIANCE HEALTH */}
       <div className="week-card card">
         <div className="card-head">
           <span className="card-label">7-Day Compliance Health</span>
@@ -155,40 +255,129 @@ export function Dashboard({ messages, templates, activity, setPage, startNewChec
         </div>
       </div>
 
+      {/* RECENT SCANNED MESSAGES & SAVED DRAFTS + ACTIVITY LOG */}
       <div className="dash-columns">
         <div className="card">
           <div className="card-head">
-            <span className="card-label">Recent Saved Messages</span>
-            <button className="link-btn" onClick={() => setPage("saved")}>View all</button>
-          </div>
-          <div className="list-body">
-            {messages.length === 0 ? (
-              <EmptyState icon={BookmarkCheck} title="No saved messages yet" subtitle="Save messages from the checker to see them here." actionLabel="Check a message" onAction={() => setPage("checker")} />
+            <div className="dash-tab-group">
+              <button
+                type="button"
+                className={`dash-tab-btn ${activeTab === "scans" ? "dash-tab-btn-active" : ""}`}
+                onClick={() => setActiveTab("scans")}
+              >
+                Live Scanned ({recentScans.length})
+              </button>
+              <button
+                type="button"
+                className={`dash-tab-btn ${activeTab === "saved" ? "dash-tab-btn-active" : ""}`}
+                onClick={() => setActiveTab("saved")}
+              >
+                Saved Drafts ({messages.length})
+              </button>
+            </div>
+            {activeTab === "saved" ? (
+              <button className="link-btn" onClick={() => setPage("saved")}>View all</button>
             ) : (
-              messages.slice(0, 5).map((m) => {
-                const meta = statusMeta(m.riskStatus);
-                return (
-                  <div className="recent-row" key={m.id}>
-                    <div className="recent-row-main">
-                      <span className="recent-title">{m.title}</span>
-                      <span className="recent-cat">{m.category}</span>
+              <button className="link-btn" onClick={startNewCheck || (() => setPage("checker"))}>
+                Composer <ArrowRight size={12} />
+              </button>
+            )}
+          </div>
+
+          <div className="list-body">
+            {activeTab === "scans" ? (
+              recentScans.length === 0 ? (
+                <EmptyState
+                  icon={MessageSquareText}
+                  title="No scanned messages yet"
+                  subtitle="Type or paste any message in Message Checker to see live audits here."
+                  actionLabel="Check a message"
+                  onAction={startNewCheck || (() => setPage("checker"))}
+                />
+              ) : (
+                recentScans.slice(0, 6).map((scan) => {
+                  const meta = statusMeta(scan.riskStatus);
+                  return (
+                    <div className="recent-row" key={scan.id}>
+                      <div className="recent-row-main">
+                        <span className="scan-excerpt">{scan.textExcerpt}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+                          <span className="scan-source-pill">{scan.source || "typed"}</span>
+                          <span className="recent-cat">{scan.wordCount} words</span>
+                          {scan.issuesCount > 0 && (
+                            <span style={{ fontSize: "10.5px", color: "var(--high)", fontWeight: 600 }}>
+                              · {scan.issuesCount} conflict{scan.issuesCount === 1 ? "" : "s"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="recent-row-meta">
+                        <span className="status-chip" style={{ color: meta.color, borderColor: meta.color }}>
+                          {meta.label}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          {onLoadScanToChecker && (
+                            <button
+                              type="button"
+                              className="link-btn"
+                              style={{ fontSize: "11px" }}
+                              onClick={() => onLoadScanToChecker(scan.fullText || scan.textExcerpt)}
+                              title="Load back into Composer"
+                            >
+                              Load
+                            </button>
+                          )}
+                          <span className="recent-time"><Clock size={11} /> {timeAgo(scan.timestamp)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="recent-row-meta">
-                      <span className="status-chip" style={{ color: meta.color, borderColor: meta.color }}>{meta.label}</span>
-                      <span className="recent-time"><Clock size={11} /> {timeAgo(m.updatedAt)}</span>
+                  );
+                })
+              )
+            ) : (
+              messages.length === 0 ? (
+                <EmptyState
+                  icon={BookmarkCheck}
+                  title="No saved messages yet"
+                  subtitle="Save messages from the checker to see them here."
+                  actionLabel="Check a message"
+                  onAction={() => setPage("checker")}
+                />
+              ) : (
+                messages.slice(0, 5).map((m) => {
+                  const meta = statusMeta(m.riskStatus);
+                  return (
+                    <div className="recent-row" key={m.id}>
+                      <div className="recent-row-main">
+                        <span className="recent-title">{m.title}</span>
+                        <span className="recent-cat">{m.category}</span>
+                      </div>
+                      <div className="recent-row-meta">
+                        <span className="status-chip" style={{ color: meta.color, borderColor: meta.color }}>
+                          {meta.label}
+                        </span>
+                        <span className="recent-time"><Clock size={11} /> {timeAgo(m.updatedAt)}</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
+                  );
+                })
+              )
             )}
           </div>
         </div>
 
+        {/* ACTIVITY LOG */}
         <div className="card">
-          <div className="card-head"><span className="card-label">Activity Log</span></div>
+          <div className="card-head">
+            <span className="card-label">Activity Log</span>
+          </div>
           <div className="list-body">
             {activity.length === 0 ? (
-              <EmptyState icon={ListChecks} title="No activity yet" subtitle="Actions you take will show up here." />
+              <EmptyState
+                icon={ListChecks}
+                title="No activity yet"
+                subtitle="Actions like typing, checking, pasting, and copying will stream here."
+              />
             ) : (
               activity.slice(0, 8).map((a) => (
                 <div className="activity-row" key={a.id}>
